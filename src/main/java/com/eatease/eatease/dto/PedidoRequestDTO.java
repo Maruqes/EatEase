@@ -12,12 +12,7 @@ import jakarta.validation.constraints.NotNull;
 public class PedidoRequestDTO {
 
     @NotNull(message = "O ID do prato é obrigatório")
-    @Min(value = 1, message = "O ID do prato deve ser positivo")
-    private Long pratoId;
-
-    @NotNull(message = "O ID do estado do pedido é obrigatório")
-    @Min(value = 1, message = "O ID do estado do pedido deve ser positivo")
-    private Long estadoPedidoId;
+    private List<Long> itensIds;
 
     @NotNull(message = "O ID da mesa é obrigatório")
     @Min(value = 1, message = "O ID da mesa deve ser positivo")
@@ -36,29 +31,20 @@ public class PedidoRequestDTO {
     public PedidoRequestDTO() {
     }
 
-    public PedidoRequestDTO(Long pratoId, Long estadoPedidoId, Long mesaId, Long funcionarioId, String observacao) {
-        this.pratoId = pratoId;
-        this.estadoPedidoId = estadoPedidoId;
+    public PedidoRequestDTO(List<Long> itensIds, Long mesaId, Long funcionarioId, String observacao) {
+        this.itensIds = itensIds;
         this.mesaId = mesaId;
         this.funcionarioId = funcionarioId;
         this.observacao = observacao;
     }
 
     // Getters and Setters
-    public Long getPratoId() {
-        return pratoId;
+    public List<Long> getItensIds() {
+        return itensIds;
     }
 
-    public void setPratoId(Long pratoId) {
-        this.pratoId = pratoId;
-    }
-
-    public Long getEstadoPedidoId() {
-        return estadoPedidoId;
-    }
-
-    public void setEstadoPedidoId(Long estadoPedidoId) {
-        this.estadoPedidoId = estadoPedidoId;
+    public void setItensIds(List<Long> itensIds) {
+        this.itensIds = itensIds;
     }
 
     public Long getMesaId() {

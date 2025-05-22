@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EatEase - Pedido</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Boxicons for food icons -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Google Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand': '#FF6B35',
+                        'brand-light': '#FFB085',
+                        'brand-dark': '#E54E00',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-image: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=10');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+        }
+
+        .card {
+            transition: transform 0.25s, box-shadow 0.25s;
+            backdrop-filter: blur(2px);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .logo-text {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .item-appear {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-6">
+    <!--
+    Guia de passos para criar um "pedido":
+    1. Obter o parâmetro 'key' da URL (?key=importantkey) e guardar localmente.
+    2. Fazer fetch a "/menu/getAll" para obter a lista de menus disponíveis.
+    3. Processar o JSON recebido e mostrar menus.
+    4. Ao selecionar um menu, fazer fetch a "/item/getByPratoId?pratoId=x" para cada item.
+    5. Mostrar o nome, preço e foto de cada item.
+  -->
+    <!-- Overlay com translucidez para facilitar leitura -->
+    <div class="fixed inset-0 bg-black/25 -z-10"></div>
+
+    <div class="container mx-auto max-w-5xl">
+        <header class="text-center mb-8 py-6 bg-white/80 rounded-2xl shadow-lg backdrop-blur-md">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <i class='bx bx-restaurant text-4xl text-brand'></i>
+                <h1 class="text-5xl font-bold text-brand logo-text">EatEase</h1>
+            </div>
+            <p class="text-gray-700 mt-2">Sabores inesquecíveis, experiência simplificada</p>
+        </header>
+
+        <!-- Carrinho fixo no topo -->
+        <div id="cart-summary" class="bg-white/90 rounded-xl shadow-lg py-3 px-5 mb-6 hidden backdrop-blur-md">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="bx bx-cart text-xl text-brand"></i>
+                    <div>
+                        <span id="cart-count" class="font-bold text-gray-700">0 itens</span>
+                        <span class="mx-2 text-gray-400">|</span>
+                        <span id="cart-total" class="font-bold text-brand-dark">€0.00</span>
+                    </div>
+                </div>
+                <div>
+                    <button id="view-cart-btn"
+                        class="text-brand hover:text-brand-dark transition-colors flex items-center gap-1">
+                        <span>Ver pedido</span>
+                        <i class="bx bx-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progresso do pedido -->
+        <div id="order-progress" class="bg-white/80 rounded-xl shadow-lg p-4 mb-6 backdrop-blur-md hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 text-center">
+                    <div id="step-1"
+                        class="h-10 w-10 rounded-full bg-brand text-white flex items-center justify-center mx-auto">
+                        <i class="bx bx-dish"></i>
+                    </div>
+                    <span class="text-sm font-medium mt-1 block">Entradas</span>
+                </div>
+                <div class="flex-1 border-t-2 border-gray-200"></div>
+                <div class="flex-1 text-center">
+                    <div id="step-2"
+                        class="h-10 w-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mx-auto">
+                        <i class="bx bx-restaurant"></i>
+                    </div>
+                    <span class="text-sm font-medium mt-1 block">Prato Principal</span>
+                </div>
+                <div class="flex-1 border-t-2 border-gray-200"></div>
+                <div class="flex-1 text-center">
+                    <div id="step-3"
+                        class="h-10 w-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mx-auto">
+                        <i class="bx bx-drink"></i>
+                    </div>
+                    <span class="text-sm font-medium mt-1 block">Bebida</span>
+                </div>
+                <div class="flex-1 border-t-2 border-gray-200"></div>
+                <div class="flex-1 text-center">
+                    <div id="step-4"
+                        class="h-10 w-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mx-auto">
+                        <i class="bx bx-cake"></i>
+                    </div>
+                    <span class="text-sm font-medium mt-1 block">Sobremesa</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navegação -->
+        <div class="flex items-center justify-between mb-6">
+            <button id="back-btn"
+                class="hidden px-4 py-2 bg-white/80 rounded-full shadow-md text-brand hover:bg-white hover:text-brand-dark transition-all">
+                <i class='bx bx-left-arrow-alt'></i>
+                <span>Voltar</span>
+            </button>
+
+            <button id="next-btn"
+                class="hidden px-6 py-2.5 bg-brand text-white rounded-full shadow-md hover:bg-brand-dark transition-all ml-auto font-medium">
+                <span>Próximo</span>
+                <i class='bx bx-right-arrow-alt'></i>
+            </button>
+        </div>
+
+        <div class="mb-6 bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-lg">
+            <h1 id="title" class="text-2xl font-semibold text-brand-dark flex items-center gap-2">
+                <i class='bx bx-food-menu'></i>
+                <span>Escolhe o teu Menu</span>
+            </h1>
+        </div>
+
+        <!-- Loader spinner -->
+        <div id="loader" class="flex justify-center items-center py-20">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-brand"></div>
+        </div>
+
+        <div id="menu-list" class="hidden"></div>
+        <div id="item-list" class="hidden"></div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const key = params.get('key');
+        if (key) localStorage.setItem('importantKey', key);
+
+        // Elementos da UI
+        const menuContainer = document.getElementById('menu-list');
+        const itemContainer = document.getElementById('item-list');
+        const titleEl = document.getElementById('title');
+        const backBtn = document.getElementById('back-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const loader = document.getElementById('loader');
+        const cartSummary = document.getElementById('cart-summary');
+        const cartCount = document.getElementById('cart-count');
+        const cartTotal = document.getElementById('cart-total');
+        const orderProgress = document.getElementById('order-progress');
+
+        // Estado da aplicação
+        const cart = {
+            items: [],
+            total: 0,
+            count: 0,
+            addItem(item) {
+                const existingItem = this.items.find(i => i.id === item.id);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    this.items.push({
+                        ...item,
+                        quantity: 1
+                    });
+                }
+                this.updateTotals();
+                this.saveToStorage();
+                this.updateUI();
+            },
+            removeItem(id) {
+                const index = this.items.findIndex(i => i.id === id);
+                if (index !== -1) {
+                    this.items.splice(index, 1);
+                    this.updateTotals();
+                    this.saveToStorage();
+                    this.updateUI();
+                }
+            },
+            updateQuantity(id, quantity) {
+                const item = this.items.find(i => i.id === id);
+                if (item) {
+                    item.quantity = quantity;
+                    if (quantity <= 0) {
+                        this.removeItem(id);
+                    } else {
+                        this.updateTotals();
+                        this.saveToStorage();
+                        this.updateUI();
+                    }
+                }
+            },
+            updateTotals() {
+                this.total = this.items.reduce((sum, item) => sum + (item.preco * item.quantity), 0);
+                this.count = this.items.reduce((count, item) => count + item.quantity, 0);
+            },
+            saveToStorage() {
+                localStorage.setItem('cart', JSON.stringify(this.items));
+            },
+            loadFromStorage() {
+                const savedCart = localStorage.getItem('cart');
+                if (savedCart) {
+                    this.items = JSON.parse(savedCart);
+                    this.updateTotals();
+                    this.updateUI();
+                }
+            },
+            updateUI() {
+                // Atualizar resumo do carrinho
+                if (this.count > 0) {
+                    cartSummary.classList.remove('hidden');
+                    cartCount.textContent = `${this.count} ${this.count === 1 ? 'item' : 'itens'}`;
+                    cartTotal.textContent = `€${this.total.toFixed(2)}`;
+                } else {
+                    cartSummary.classList.add('hidden');
+                }
+            },
+            clear() {
+                this.items = [];
+                this.total = 0;
+                this.count = 0;
+                this.saveToStorage();
+                this.updateUI();
+            }
+        };
+
+        // Tipos de pratos e fluxo do pedido
+        const pratoTypes = [
+            { id: 2, nome: "Entradas", icon: "bx-dish" },
+            { id: 1, nome: "Prato Principal", icon: "bx-restaurant" },
+            { id: 3, nome: "Bebida", icon: "bx-drink" },
+            { id: 4, nome: "Sobremesa", icon: "bx-cake" }
+        ];
+
+        let currentPratoTypeIndex = 0;
+
+        // Carrega o carrinho do localStorage
+        cart.loadFromStorage();
+
+        // Função para iniciar o fluxo do pedido diretamente (sem passar pela seleção de menu)
+        function initializeOrderFlow() {
+            // Esconder a seleção de menu e mostrar o fluxo de pedido
+            menuContainer.classList.add('hidden');
+            orderProgress.classList.remove('hidden');
+
+            // Mostrar botões de navegação
+            nextBtn.classList.remove('hidden');
+            nextBtn.style.display = 'flex';
+            nextBtn.style.alignItems = 'center';
+
+            // Configurar comportamentos dos botões de navegação para o fluxo direto
+            nextBtn.onclick = function () {
+                if (currentPratoTypeIndex === pratoTypes.length - 1) {
+                    // Finalizar pedido
+                    completeOrder();
+                } else {
+                    // Ir para próximo tipo de prato
+                    currentPratoTypeIndex++;
+                    loadItemsByPratoType(pratoTypes[currentPratoTypeIndex].id);
+                    updateStepUI();
+                }
+            };
+
+            backBtn.onclick = function () {
+                if (currentPratoTypeIndex === 0) {
+                    // Não temos ação para voltar na primeira etapa
+                    return;
+                } else {
+                    // Voltar para tipo de prato anterior
+                    currentPratoTypeIndex--;
+                    loadItemsByPratoType(pratoTypes[currentPratoTypeIndex].id);
+                    updateStepUI();
+                }
+            };
+
+            // Mostrar as entradas (primeiro tipo de prato)
+            loadItemsByPratoType(pratoTypes[currentPratoTypeIndex].id);
+
+            // Atualizar título
+            updateStepUI();
+        }
+
+        // Função para atualizar a interface com o tipo atual de prato
+        function updateStepUI() {
+            const currentType = pratoTypes[currentPratoTypeIndex];
+
+            // Atualizar título
+            titleEl.innerHTML = `<i class="bx ${currentType.icon}"></i> <span>${currentType.nome}</span>`;
+
+            // Atualizar indicador de progresso
+            for (let i = 0; i < pratoTypes.length; i++) {
+                const stepEl = document.getElementById(`step-${i + 1}`);
+                if (i < currentPratoTypeIndex) {
+                    // Etapa concluída
+                    stepEl.className = 'h-10 w-10 rounded-full bg-green-500 text-white flex items-center justify-center mx-auto';
+                } else if (i === currentPratoTypeIndex) {
+                    // Etapa atual
+                    stepEl.className = 'h-10 w-10 rounded-full bg-brand text-white flex items-center justify-center mx-auto';
+                } else {
+                    // Etapa futura
+                    stepEl.className = 'h-10 w-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mx-auto';
+                }
+            }
+
+            // Mostrar/esconder botões de navegação
+            if (currentPratoTypeIndex === 0) {
+                backBtn.classList.add('hidden');
+            } else {
+                backBtn.classList.remove('hidden');
+                backBtn.style.display = 'flex';
+                backBtn.style.alignItems = 'center';
+                backBtn.style.gap = '0.5rem';
+            }
+
+            if (currentPratoTypeIndex === pratoTypes.length - 1) {
+                nextBtn.innerHTML = 'Finalizar Pedido <i class="bx bx-check ml-1"></i>';
+                nextBtn.className = 'px-6 py-2.5 bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 transition-all ml-auto font-medium flex items-center gap-2';
+            } else {
+                nextBtn.innerHTML = 'Próximo <i class="bx bx-right-arrow-alt"></i>';
+                nextBtn.className = 'px-6 py-2.5 bg-brand text-white rounded-full shadow-md hover:bg-brand-dark transition-all ml-auto font-medium flex items-center gap-2';
+            }
+
+            nextBtn.classList.remove('hidden');
+            nextBtn.style.display = 'flex';
+            nextBtn.style.alignItems = 'center';
+        }
+
+        // Função para carregar itens por tipo de prato
+        function loadItemsByPratoType(pratoTypeId) {
+            // Limpar container e mostrar loader
+            itemContainer.innerHTML = '';
+            loader.classList.remove('hidden');
+            itemContainer.classList.add('hidden');
+
+            // Fetch de itens do tipo de prato atual
+            fetch(`/item/getByTipoPratoId?tipoPratoId=${pratoTypeId}`)
+                .then(res => res.json())
+                .then(items => {
+                    renderItems(items);
+                    loader.classList.add('hidden');
+                    itemContainer.classList.remove('hidden');
+                    itemContainer.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6';
+                })
+                .catch(err => {
+                    console.error('Erro ao carregar itens:', err);
+                    loader.classList.add('hidden');
+
+                    // Mostrar mensagem de erro
+                    itemContainer.innerHTML = `<div class="col-span-3 text-center py-10">
+                        <i class="bx bx-error-circle text-4xl text-red-500 mb-2"></i>
+                        <p class="text-gray-700">Ocorreu um erro ao carregar os itens. Tente novamente.</p>
+                    </div>`;
+                    itemContainer.classList.remove('hidden');
+                });
+        }
+
+        // Renderizar lista de itens
+        function renderItems(items) {
+            if (items.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'col-span-3 text-center py-10 text-gray-500';
+                emptyMessage.innerHTML = `<i class="bx bx-dish text-4xl mb-2"></i><p>Nenhum item encontrado para esta categoria.</p>`;
+                itemContainer.appendChild(emptyMessage);
+                return;
+            }
+
+            items.forEach((item, index) => {
+                const itemElement = renderItem(item, index);
+                itemContainer.appendChild(itemElement);
+            });
+        }
+
+        // Passo 2: obter menus
+        fetch('/menu/getAll')
+            .then(res => res.json())
+            .then(menus => {
+                // Esconder o loader
+                loader.classList.add('hidden');
+
+                // Mostrar interface de seleção de menu
+                menuContainer.classList.remove('hidden');
+                menuContainer.className += ' grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
+
+                // Array de ícones de comida para variar nos cards
+                const foodIcons = ['bx-restaurant', 'bx-dish', 'bx-bowl-hot', 'bx-bowl-rice', 'bx-cheese'];
+
+                menus.forEach((menu, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card bg-white/90 border-l-4 border-l-brand rounded-xl shadow-lg p-5 flex flex-col overflow-hidden';
+                    card.style.animation = `fadeIn 0.4s ease-out ${index * 0.1}s forwards`;
+                    card.style.opacity = '0';
+
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'relative bg-gradient-to-r from-brand-light to-brand h-44 rounded-lg mb-4 flex items-center justify-center overflow-hidden';
+
+                    const badge = document.createElement('div');
+                    badge.className = 'absolute top-3 right-3 bg-white/90 text-brand text-xs px-2 py-1 rounded-full font-semibold shadow';
+                    badge.textContent = 'Menu Especial';
+                    imgContainer.appendChild(badge);
+
+                    const icon = document.createElement('i');
+                    icon.className = `bx ${foodIcons[index % foodIcons.length]} text-6xl text-white`;
+                    imgContainer.appendChild(icon);
+
+                    const pattern = document.createElement('div');
+                    pattern.className = 'absolute inset-0 opacity-10';
+                    pattern.innerHTML = '<div class="w-full h-full" style="background-image: radial-gradient(circle, #fff 1px, transparent 1px); background-size: 15px 15px;"></div>';
+                    imgContainer.appendChild(pattern);
+
+                    card.appendChild(imgContainer);
+
+                    const title = document.createElement('h2');
+                    title.className = 'text-xl font-semibold mb-2 text-brand-dark';
+                    title.textContent = menu.nome;
+                    card.appendChild(title);
+
+                    const desc = document.createElement('p');
+                    desc.className = 'text-gray-600 flex-grow mb-4 line-clamp-3';
+                    desc.textContent = menu.descricao || 'Desfrute de nossa seleção especial de pratos preparados com ingredientes frescos.';
+                    card.appendChild(desc);
+
+                    const footer = document.createElement('div');
+                    footer.className = 'flex items-center justify-between mt-2';
+
+                    const itemCount = document.createElement('span');
+                    itemCount.className = 'bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full';
+                    itemCount.textContent = `${menu.items_id.length} item${menu.items_id.length !== 1 ? 's' : ''}`;
+                    footer.appendChild(itemCount);
+
+                    const btn = document.createElement('button');
+                    btn.className = 'group bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark transition-all flex items-center gap-1';
+                    btn.innerHTML = 'Ver pratos <i class="bx bx-right-arrow-alt ml-1 transform group-hover:translate-x-1 transition-transform"></i>';
+                    btn.addEventListener('click', () => selectMenu(menu));
+                    footer.appendChild(btn);
+
+                    card.appendChild(footer);
+                    menuContainer.appendChild(card);
+                });
+            })
+            .catch(err => console.error('Erro ao obter menus:', err));
+
+        function renderItem(item, index) {
+            const card = document.createElement('div');
+            card.className = 'card bg-white/90 rounded-xl shadow-lg overflow-hidden flex flex-col h-full item-appear';
+            card.style.animation = `fadeIn 0.4s ease-out ${index * 0.1}s forwards`;
+            card.style.opacity = '0';
+
+            // Adicionar id ao card para referência
+            card.dataset.itemId = item.id;
+
+            // Cores de gradiente baseadas no tipo de prato atual
+            let gradientColor;
+            switch (pratoTypes[currentPratoTypeIndex].id) {
+                case 2: // Entradas
+                    gradientColor = 'from-amber-400 to-orange-500';
+                    break;
+                case 1: // Prato Principal
+                    gradientColor = 'from-rose-500 to-orange-500';
+                    break;
+                case 3: // Bebida
+                    gradientColor = 'from-blue-400 to-indigo-500';
+                    break;
+                case 4: // Sobremesa
+                    gradientColor = 'from-purple-500 to-pink-500';
+                    break;
+                default:
+                    gradientColor = 'from-teal-400 to-emerald-500';
+            }
+
+            // Container da imagem com gradiente
+            const imgContainer = document.createElement('div');
+            imgContainer.className = `relative h-48 bg-gradient-to-br ${gradientColor} flex items-center justify-center overflow-hidden`;
+
+            // Ícone baseado no tipo de prato
+            let iconClass = pratoTypes[currentPratoTypeIndex].icon;
+
+            // Refinar ícone baseado no nome do item
+            const lowerName = item.nome.toLowerCase();
+            if (lowerName.includes('salada')) iconClass = 'bx-bowl-rice';
+            else if (lowerName.includes('peixe') || lowerName.includes('pesca')) iconClass = 'bx-fish';
+            else if (lowerName.includes('carne')) iconClass = 'bx-restaurant';
+            else if (lowerName.includes('pasta') || lowerName.includes('massa')) iconClass = 'bx-bowl-hot';
+            else if (lowerName.includes('sobremesa') || lowerName.includes('doce')) iconClass = 'bx-cake';
+            else if (lowerName.includes('vinho')) iconClass = 'bx-wine';
+            else if (lowerName.includes('cerveja')) iconClass = 'bx-beer';
+            else if (lowerName.includes('café')) iconClass = 'bx-coffee';
+            else if (lowerName.includes('refrigerante') || lowerName.includes('soda')) iconClass = 'bx-drink';
+
+            const icon = document.createElement('i');
+            icon.className = `bx ${iconClass} text-7xl text-white/75`;
+            imgContainer.appendChild(icon);
+
+            // Adicionar detalhe visual à imagem
+            const pattern = document.createElement('div');
+            pattern.className = 'absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/30 to-transparent';
+            imgContainer.appendChild(pattern);
+
+            // Nome do prato sobreposto na imagem
+            const overlayName = document.createElement('div');
+            overlayName.className = 'absolute bottom-3 left-4 text-white font-semibold text-lg drop-shadow-md';
+            overlayName.textContent = item.nome;
+            imgContainer.appendChild(overlayName);
+
+            card.appendChild(imgContainer);
+
+            // Conteúdo
+            const content = document.createElement('div');
+            content.className = 'p-5 flex flex-col flex-grow';
+
+            // Descrição do item (simulada ou real se disponível)
+            const desc = document.createElement('p');
+            desc.className = 'text-gray-600 mb-4 flex-grow';
+            desc.textContent = item.descricao || 'Preparado com ingredientes frescos selecionados pelos nossos chefs.';
+            content.appendChild(desc);
+
+            // Nutrição (simulada)
+            const nutrition = document.createElement('div');
+            nutrition.className = 'flex flex-wrap gap-2 mb-4';
+
+            const nutritionItems = [
+                { icon: 'bx-coin-stack', text: `${Math.floor(Math.random() * 500 + 200)} cal` },
+                { icon: 'bx-timer', text: `${Math.floor(Math.random() * 20 + 10)} min` }
+            ];
+
+            nutritionItems.forEach(ni => {
+                const badge = document.createElement('div');
+                badge.className = 'bg-gray-100 px-2 py-1 rounded-full text-xs flex items-center gap-1';
+                badge.innerHTML = `<i class="bx ${ni.icon} text-brand"></i> ${ni.text}`;
+                nutrition.appendChild(badge);
+            });
+
+            content.appendChild(nutrition);
+
+            // Preço e controles de quantidade
+            const priceBox = document.createElement('div');
+            priceBox.className = 'flex items-center justify-between mt-auto';
+
+            const priceEl = document.createElement('div');
+            priceEl.className = 'text-lg font-semibold text-brand-dark flex items-baseline gap-1';
+            priceEl.innerHTML = `€${item.preco.toFixed(2)} <span class="text-xs text-gray-500">/ unid.</span>`;
+            priceBox.appendChild(priceEl);
+
+            // Verificar se o item já está no carrinho
+            const existingCartItem = cart.items.find(i => i.id === item.id);
+
+            if (existingCartItem) {
+                // Se já está no carrinho, mostrar controle de quantidade
+                const quantityControl = document.createElement('div');
+                quantityControl.className = 'flex items-center bg-gray-100 rounded-lg';
+
+                // Botão de diminuir
+                const decreaseBtn = document.createElement('button');
+                decreaseBtn.className = 'w-8 h-8 flex items-center justify-center text-gray-600 hover:text-brand';
+                decreaseBtn.innerHTML = '<i class="bx bx-minus"></i>';
+                decreaseBtn.addEventListener('click', () => {
+                    cart.updateQuantity(item.id, existingCartItem.quantity - 1);
+                    // Recarregar o item para atualizar a UI
+                    const cardToUpdate = document.querySelector(`[data-item-id="${item.id}"]`);
+                    if (cardToUpdate) {
+                        const index = Array.from(itemContainer.children).indexOf(cardToUpdate);
+                        if (cart.items.find(i => i.id === item.id)) {
+                            cardToUpdate.replaceWith(renderItem(item, index));
+                        } else {
+                            renderItem(item, index);
+                        }
+                    }
+                });
+                quantityControl.appendChild(decreaseBtn);
+
+                // Contador
+                const counter = document.createElement('span');
+                counter.className = 'w-8 text-center font-medium text-gray-800';
+                counter.textContent = existingCartItem.quantity;
+                quantityControl.appendChild(counter);
+
+                // Botão de aumentar
+                const increaseBtn = document.createElement('button');
+                increaseBtn.className = 'w-8 h-8 flex items-center justify-center text-gray-600 hover:text-brand';
+                increaseBtn.innerHTML = '<i class="bx bx-plus"></i>';
+                increaseBtn.addEventListener('click', () => {
+                    cart.updateQuantity(item.id, existingCartItem.quantity + 1);
+                    // Recarregar o item para atualizar a UI
+                    const cardToUpdate = document.querySelector(`[data-item-id="${item.id}"]`);
+                    if (cardToUpdate) {
+                        const index = Array.from(itemContainer.children).indexOf(cardToUpdate);
+                        cardToUpdate.replaceWith(renderItem(item, index));
+                    }
+                });
+                quantityControl.appendChild(increaseBtn);
+
+                priceBox.appendChild(quantityControl);
+            } else {
+                // Botão de adicionar ao pedido
+                const addBtn = document.createElement('button');
+                addBtn.className = 'bg-brand text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-brand-dark transition-colors';
+                addBtn.innerHTML = '<i class="bx bx-plus"></i>';
+                addBtn.title = 'Adicionar ao pedido';
+                addBtn.addEventListener('click', () => {
+                    cart.addItem(item);
+
+                    // Animar o botão para indicar adição
+                    addBtn.classList.add('animate-ping');
+                    setTimeout(() => {
+                        // Recarregar o item para mostrar controle de quantidade
+                        const cardToUpdate = document.querySelector(`[data-item-id="${item.id}"]`);
+                        if (cardToUpdate) {
+                            const index = Array.from(itemContainer.children).indexOf(cardToUpdate);
+                            cardToUpdate.replaceWith(renderItem(item, index));
+                        }
+                    }, 300);
+                });
+                priceBox.appendChild(addBtn);
+            }
+
+            content.appendChild(priceBox);
+            card.appendChild(content);
+
+            return card;
+        }
+
+        // Os event listeners para navegação são definidos dinamicamente
+        // para se adaptar a cada fluxo (seleção de menu ou pedido direto)
+        // Ver funções selectMenu e initializeOrderFlow
+
+        // Função de finalização do pedido
+        function completeOrder() {
+            if (cart.items.length === 0) {
+                alert('Por favor, selecione pelo menos um item antes de finalizar o pedido.');
+                return;
+            }
+
+            // Esconder o container de itens e mostrar loader
+            itemContainer.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            // Preparar dados do pedido para o endpoint /pedido/pedirQR
+            const pedidoData = {
+                itensIds: cart.items.flatMap(item => Array(item.quantity).fill(item.id)), // Repetir ID conforme quantidade
+                mesaId: 1, // Conforme a especificação
+                funcionarioId: 1, // Conforme a especificação
+                ingredientesRemover: [], // Array vazio conforme a especificação
+                observacao: "" // Opcional, pode adicionar um campo para isso no futuro
+            };
+
+            console.log('Enviando pedido:', pedidoData);
+
+            // Enviar o pedido para o endpoint /pedido/pedirQR
+            fetch('/pedido/pedirQR?key='+key, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(pedidoData)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao enviar pedido: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Pedido enviado com sucesso:', data);
+
+                    // Esconder loader
+                    loader.classList.add('hidden');
+
+                    // Mostrar mensagem de confirmação
+                    const confirmationMessage = document.createElement('div');
+                    confirmationMessage.className = 'bg-white/90 rounded-xl p-8 shadow-xl backdrop-blur-md text-center';
+                    confirmationMessage.innerHTML = `
+                    <div class="w-20 h-20 rounded-full bg-green-100 mx-auto flex items-center justify-center mb-4">
+                        <i class="bx bx-check text-4xl text-green-600"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Pedido Realizado!</h2>
+                    <p class="text-gray-600 mb-6">Seu pedido foi enviado para a cozinha e será entregue em breve.</p>
+                    <p class="text-xl font-semibold text-brand-dark mb-6">Total: €${cart.total.toFixed(2)}</p>
+                    <button id="new-order-btn" class="bg-brand text-white px-6 py-3 rounded-lg hover:bg-brand-dark transition-colors">
+                        Fazer Novo Pedido
+                    </button>
+                `;
+
+                    itemContainer.innerHTML = '';
+                    itemContainer.appendChild(confirmationMessage);
+                    itemContainer.classList.remove('hidden');
+                    itemContainer.className = 'flex items-center justify-center';
+
+                    // Esconder navegação e barra de progresso
+                    backBtn.classList.add('hidden');
+                    nextBtn.classList.add('hidden');
+                    orderProgress.classList.add('hidden');
+                    cartSummary.classList.add('hidden');
+
+                    // Botão para reiniciar o processo
+                    document.getElementById('new-order-btn').addEventListener('click', () => {
+                        // Limpar carrinho
+                        cart.clear();
+
+                        // Reiniciar para a primeira etapa
+                        currentPratoTypeIndex = 0;
+                        loadItemsByPratoType(pratoTypes[currentPratoTypeIndex].id);
+
+                        // Restaurar UI
+                        orderProgress.classList.remove('hidden');
+                        updateStepUI();
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao processar pedido:', error);
+
+                    // Esconder loader
+                    loader.classList.add('hidden');
+
+                    // Mostrar mensagem de erro
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'bg-white/90 rounded-xl p-8 shadow-xl backdrop-blur-md text-center';
+                    errorMessage.innerHTML = `
+                    <div class="w-20 h-20 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4">
+                        <i class="bx bx-error text-4xl text-red-600"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Erro ao Processar Pedido</h2>
+                    <p class="text-gray-600 mb-6">Ocorreu um erro ao enviar seu pedido. Por favor, tente novamente.</p>
+                    <button id="try-again-btn" class="bg-brand text-white px-6 py-3 rounded-lg hover:bg-brand-dark transition-colors">
+                        Tentar Novamente
+                    </button>
+                `;
+
+                    itemContainer.innerHTML = '';
+                    itemContainer.appendChild(errorMessage);
+                    itemContainer.classList.remove('hidden');
+                    itemContainer.className = 'flex items-center justify-center';
+
+                    // Botão para tentar novamente
+                    document.getElementById('try-again-btn').addEventListener('click', () => {
+                        completeOrder(); // Tentar enviar o pedido novamente
+                    });
+                });
+        }
+
+        // View Cart Button
+        document.getElementById('view-cart-btn').addEventListener('click', () => {
+            // Mostrar modal ou página com detalhes do carrinho
+            const cartItems = cart.items.map(item =>
+                `<div class="flex justify-between items-center py-2 border-b border-gray-200">
+                    <div>
+                        <span class="font-medium">${item.nome}</span>
+                        <span class="text-sm text-gray-500 ml-2">x${item.quantity}</span>
+                    </div>
+                    <span class="font-medium">€${(item.preco * item.quantity).toFixed(2)}</span>
+                </div>`
+            ).join('');
+
+            alert(`Seu Pedido:\n\n${cart.items.map(item => `${item.nome} x${item.quantity} - €${(item.preco * item.quantity).toFixed(2)}`).join('\n')}\n\nTotal: €${cart.total.toFixed(2)}`);
+        });
+
+        function selectMenu(menu) {
+            localStorage.setItem('selectedMenu', JSON.stringify(menu));
+            titleEl.innerHTML = `<i class="bx bx-dish"></i> <span>Pratos de ${menu.nome}</span>`;
+            menuContainer.classList.add('hidden');
+
+            // Mostrar o loader enquanto carrega os itens
+            loader.classList.remove('hidden');
+            itemContainer.innerHTML = '';
+
+            // Mostrar progresso do pedido e botões de navegação
+            orderProgress.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+            nextBtn.style.display = 'flex';
+            nextBtn.style.alignItems = 'center';
+
+            // Mostrar botão voltar para retornar à seleção de menu
+            backBtn.classList.remove('hidden');
+            backBtn.style.display = 'flex';
+            backBtn.style.alignItems = 'center';
+            backBtn.style.gap = '0.5rem';
+
+            // Modificar o comportamento do botão voltar quando estiver na seleção de itens do menu
+            const originalBackAction = backBtn.onclick;
+            backBtn.onclick = function () {
+                // Voltar à seleção de menu
+                itemContainer.classList.add('hidden');
+                menuContainer.classList.remove('hidden');
+                orderProgress.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                backBtn.classList.add('hidden');
+                titleEl.innerHTML = '<i class="bx bx-food-menu"></i> <span>Escolhe o teu Menu</span>';
+
+                // Restaurar o comportamento original do botão voltar
+                backBtn.onclick = originalBackAction;
+            };
+
+            // fetch items e mostrar nome, preço e foto
+            const totalItems = menu.items_id.length;
+            let loadedItems = 0;
+            let loadedItemsData = [];
+
+            menu.items_id.forEach((id, index) => {
+                fetch(`/item/getByPratoId?pratoId=${id}`)
+                    .then(res => res.json())
+                    .then(itemData => {
+                        // Guardar os dados do item para ordenar por tipo de prato depois
+                        loadedItemsData.push(itemData);
+                        loadedItems++;
+
+                        // Quando todos os itens estiverem carregados
+                        if (loadedItems === totalItems) {
+                            // Iniciar o fluxo do pedido com os itens carregados
+                            currentPratoTypeIndex = 0;
+                            updateStepUI();
+
+                            // Mostrar os itens de acordo com o tipo atual
+                            showItemsByType(loadedItemsData, pratoTypes[currentPratoTypeIndex].id);
+
+                            // Atualizar os botões de navegação para navegar pelos tipos de itens do menu
+                            nextBtn.onclick = function () {
+                                if (currentPratoTypeIndex === pratoTypes.length - 1) {
+                                    // Finalizar pedido
+                                    completeOrder();
+                                } else {
+                                    // Ir para próximo tipo de prato
+                                    currentPratoTypeIndex++;
+                                    showItemsByType(loadedItemsData, pratoTypes[currentPratoTypeIndex].id);
+                                    updateStepUI();
+                                }
+                            };
+
+                            // Alterar o comportamento do botão voltar quando navegar entre tipos de pratos
+                            backBtn.onclick = function () {
+                                if (currentPratoTypeIndex === 0) {
+                                    // Voltar à seleção de menu
+                                    itemContainer.classList.add('hidden');
+                                    menuContainer.classList.remove('hidden');
+                                    orderProgress.classList.add('hidden');
+                                    nextBtn.classList.add('hidden');
+                                    backBtn.classList.add('hidden');
+                                    titleEl.innerHTML = '<i class="bx bx-food-menu"></i> <span>Escolhe o teu Menu</span>';
+
+                                    // Restaurar comportamentos originais
+                                    backBtn.onclick = originalBackAction;
+                                    nextBtn.onclick = null;
+                                } else {
+                                    // Voltar para tipo de prato anterior
+                                    currentPratoTypeIndex--;
+                                    showItemsByType(loadedItemsData, pratoTypes[currentPratoTypeIndex].id);
+                                    updateStepUI();
+                                }
+                            };
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Erro ao obter item:', err);
+                        loadedItems++;
+
+                        if (loadedItems === totalItems) {
+                            loader.classList.add('hidden');
+                            itemContainer.innerHTML = `<div class="col-span-3 text-center py-10">
+                                <i class="bx bx-error-circle text-4xl text-red-500 mb-2"></i>
+                                <p class="text-gray-700">Ocorreu um erro ao carregar os itens. Tente novamente.</p>
+                            </div>`;
+                            itemContainer.classList.remove('hidden');
+                        }
+                    });
+            });
+        }
+
+        // Função para mostrar itens por tipo de prato (usado após carregar os itens do menu)
+        function showItemsByType(items, typePratoId) {
+            // Filtrar itens pelo tipo de prato
+            const filteredItems = items.filter(item => item.tipoPrato_id === typePratoId);
+
+            // Limpar container e esconder loader
+            itemContainer.innerHTML = '';
+            loader.classList.add('hidden');
+
+            // Renderizar itens filtrados
+            if (filteredItems.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'col-span-3 text-center py-10 text-gray-500';
+                emptyMessage.innerHTML = `<i class="bx bx-dish text-4xl mb-2"></i><p>Nenhum item encontrado para esta categoria.</p>`;
+                itemContainer.appendChild(emptyMessage);
+            } else {
+                filteredItems.forEach((item, index) => {
+                    const itemElement = renderItem(item, index);
+                    itemContainer.appendChild(itemElement);
+                });
+            }
+
+            // Mostrar container de itens
+            itemContainer.classList.remove('hidden');
+            itemContainer.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6';
+        }
+    </script>
+</body>
+
+</html>

@@ -42,11 +42,11 @@ public class Testing {
                 cargoService.createCargo("COZINHEIRO"); // id 3
                 cargoService.createCargo("LIMPEZA"); // id 4
 
-                estadoPedidoService.createEstadoPedido("PENDING");
-                estadoPedidoService.createEstadoPedido("READY");
-                estadoPedidoService.createEstadoPedido("IN_PREPARATION");
-                estadoPedidoService.createEstadoPedido("SERVED");
-
+                estadoPedidoService.createEstadoPedido("PENDING"); //5
+                estadoPedidoService.createEstadoPedido("READY"); //2
+                estadoPedidoService.createEstadoPedido("IN_PREPARATION"); //3
+                estadoPedidoService.createEstadoPedido("SERVED"); //4
+ 
                 unidadeMedidaService.createUnidadeMedida("quilos");
                 unidadeMedidaService.createUnidadeMedida("gramas");
                 unidadeMedidaService.createUnidadeMedida("litros");

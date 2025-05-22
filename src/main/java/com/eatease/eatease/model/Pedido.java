@@ -12,7 +12,7 @@ public class Pedido {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    private long prato_id;
+    private List<Long> itensIds;
     private long estadoPedido_id;
     private long mesa_id;
     private long funcionario_id;
@@ -28,12 +28,12 @@ public class Pedido {
         this.id = id;
     }
 
-    public long getPrato_id() {
-        return prato_id;
+    public List<Long> getItensIds() {
+        return itensIds;
     }
 
-    public void setPrato_id(long prato_id) {
-        this.prato_id = prato_id;
+    public void setItensIds(List<Long> itensIds) {
+        this.itensIds = itensIds;
     }
 
     public long getEstadoPedido_id() {

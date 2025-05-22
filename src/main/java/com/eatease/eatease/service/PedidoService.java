@@ -35,12 +35,14 @@ public class PedidoService {
         this.estadoPedidoService = estadoPedidoService;
     }
 
-    public String checkAllInfo(long prato_id, long estadoPedido_id, long mesa_id, long funcionario_id) {
+    public String checkAllInfo(List<Long> prato_id, long estadoPedido_id, long mesa_id, long funcionario_id) {
         // Verifica se o prato/estadoPedido/mesa/funcionario existe
-        Optional<Item> pratoOpt = itemService.getItemById(prato_id);
-        if (pratoOpt.isEmpty()) {
-            System.err.println("O prato não existe.");
-            return "O prato não existe.";
+        for (Long prato : prato_id) {
+            Optional<Item> pratoOpt = itemService.getItemById(prato);
+            if (pratoOpt.isEmpty()) {
+                System.err.println("O prato não existe.");
+                return "O prato não existe.";
+            }
         }
         Optional<Mesa> mesaOpt = mesaService.getMesaById(mesa_id);
         if (mesaOpt.isEmpty()) {
@@ -111,20 +113,24 @@ public class PedidoService {
         }
     }
 
-    public Pedido createPedido(long prato_id, long estadoPedido_id, long mesa_id, long funcionario_id,
+    public Pedido createPedido(List<Long> prato_id, long mesa_id, long funcionario_id,
             String observacao, List<Long> itensRemover) throws Exception {
+
+        long estadoPedido_id = 5; // ID do estado "Pendente"
 
         String error = checkAllInfo(prato_id, estadoPedido_id, mesa_id, funcionario_id);
         if (error != null) {
             throw new Exception(error);
         }
 
-        if (alterarStockItem(prato_id, itensRemover) == false) {
-            throw new Exception("Não há stock suficiente para o prato " + prato_id);
+        for (Long prato : prato_id) {
+            if (alterarStockItem(prato, itensRemover) == false) {
+                throw new Exception("Não há stock suficiente para o prato " + prato);
+            }
         }
 
         Pedido Pedido = new Pedido();
-        Pedido.setPrato_id(prato_id);
+        Pedido.setItensIds(prato_id);
         Pedido.setEstadoPedido_id(estadoPedido_id);
         Pedido.setMesa_id(mesa_id);
         Pedido.setFuncionario_id(funcionario_id);

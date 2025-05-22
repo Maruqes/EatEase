@@ -3,6 +3,8 @@ package com.eatease.eatease.controller;
 import com.eatease.eatease.model.Pedido;
 import com.eatease.eatease.dto.PedidoRequestDTO;
 import com.eatease.eatease.service.PedidoService;
+import com.eatease.eatease.service.QRService;
+import com.eatease.eatease.service.QRService.QRData;
 import com.eatease.eatease.service.Login;
 
 import org.springframework.http.ResponseEntity;
@@ -26,9 +28,11 @@ import java.util.Optional;
 public class PedidoController {
 
     private final PedidoService pedidoService;
+    private final QRService qrService;
 
-    public PedidoController(PedidoService pedidoService) {
+    public PedidoController(PedidoService pedidoService, QRService qrService) {
         this.pedidoService = pedidoService;
+        this.qrService = qrService;
     }
 
     /**
@@ -48,11 +52,37 @@ public class PedidoController {
 
         try {
             Pedido result = pedidoService.createPedido(
-                    pedidoDTO.getPratoId(),
-                    pedidoDTO.getEstadoPedidoId(),
+                    pedidoDTO.getItensIds(),
                     pedidoDTO.getMesaId(),
                     pedidoDTO.getFuncionarioId(),
-                    pedidoDTO.getObservacao(),pedidoDTO.getIngredientesRemover());
+                    pedidoDTO.getObservacao(), pedidoDTO.getIngredientesRemover());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Erro ao cadastrar pedido: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/pedirQR")
+    public ResponseEntity<?> createPedidoQR(
+            @RequestParam String key,
+            @Valid @RequestBody PedidoRequestDTO pedidoDTO,
+            @Parameter(hidden = true) HttpServletRequest request) {
+
+        if (qrService.isKeyValidAndUnused(key) == false) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Erro ao cadastrar pedido: QR Code inválido");
+        }
+
+        try {
+            QRData qrData = qrService.getQRData(key);
+            Pedido result = pedidoService.createPedido(
+                    pedidoDTO.getItensIds(),
+                    qrData.getMesaId(),
+                    qrData.getFuncionarioId(),
+                    pedidoDTO.getObservacao(), pedidoDTO.getIngredientesRemover());
+            // Marca o QR Code como usado
+            qrService.markAsUsed(key);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -98,39 +128,6 @@ public class PedidoController {
     }
 
     /**
-     * Atualiza um pedido existente
-     */
-    // @PostMapping("/edit")
-    // public ResponseEntity<String> updatePedido(
-    // @Valid @RequestBody PedidoUpdateDTO pedidoDTO,
-    // @Parameter(hidden = true) HttpServletRequest request) {
-
-    // // Verificação de autenticação - GERENTE, COZINHEIRO e FUNCIONARIO podem
-    // editar
-    // // pedidos
-    // String validUsername = Login.checkLoginWithCargos(request, "GERENTE",
-    // "COZINHEIRO", "FUNCIONARIO");
-    // if (validUsername == null) {
-    // return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Não autenticado
-    // ou sem permissões");
-    // }
-
-    // String result = pedidoService.updatePedido(
-    // pedidoDTO.getId(),
-    // pedidoDTO.getPratoId(),
-    // pedidoDTO.getEstadoPedidoId(),
-    // pedidoDTO.getMesaId(),
-    // pedidoDTO.getFuncionarioId(),
-    // pedidoDTO.getObservacao());
-
-    // if (result == null) {
-    // return ResponseEntity.ok("Pedido atualizado com sucesso.");
-    // } else {
-    // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
-    // }
-    // }
-
-    /**
      * Remove um pedido
      */
     @DeleteMapping("/delete")
@@ -139,7 +136,7 @@ public class PedidoController {
             @Parameter(hidden = true) HttpServletRequest request) {
 
         // Verificação de autenticação - apenas GERENTE pode remover pedidos
-        String validUsername = Login.checkLoginWithCargos(request, "GERENTE");
+        String validUsername = Login.checkLoginWithCargos(request, "GERENTE", "COZINHEIRO", "FUNCIONARIO");
         if (validUsername == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Não autenticado ou sem permissões");
         }
