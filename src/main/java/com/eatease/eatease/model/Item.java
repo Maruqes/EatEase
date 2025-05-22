@@ -20,7 +20,7 @@ public class Item {
     @JdbcTypeCode(SqlTypes.JSON)
     private String ingredientesJson; // Stores JSON array of {ingrediente_id: X, quantidade: Y}
 
-    private boolean eCpmposto;
+    private boolean eComposto;
     private int stockAtual;
 
     public long getId() {
@@ -63,12 +63,12 @@ public class Item {
         this.ingredientesJson = ingredientesJson;
     }
 
-    public boolean iseCpmposto() {
-        return eCpmposto;
+    public boolean iseComposto() {
+        return eComposto;
     }
 
-    public void seteCpmposto(boolean eCpmposto) {
-        this.eCpmposto = eCpmposto;
+    public void seteComposto(boolean eComposto) {
+        this.eComposto = eComposto;
     }
 
     public int getStockAtual() {

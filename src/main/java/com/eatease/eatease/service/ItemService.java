@@ -62,7 +62,7 @@ public class ItemService {
         item.setNome(nome);
         item.setTipoPrato_id(tipoPratoId);
         item.setPreco(preco);
-        item.seteCpmposto(eComposto);
+        item.seteComposto(eComposto);
         item.setStockAtual(stockAtual);
 
         try {
@@ -120,7 +120,7 @@ public class ItemService {
         item.setNome(nome);
         item.setTipoPrato_id(tipoPratoId);
         item.setPreco(preco);
-        item.seteCpmposto(eComposto);
+        item.seteComposto(eComposto);
         item.setStockAtual(stockAtual);
 
         try {
