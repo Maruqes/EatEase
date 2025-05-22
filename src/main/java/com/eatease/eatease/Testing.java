@@ -1,6 +1,5 @@
 package com.eatease.eatease;
 
-import com.eatease.eatease.model.TipoMenu;
 import com.eatease.eatease.service.CargoService;
 import com.eatease.eatease.service.EstadoPedidoService;
 import com.eatease.eatease.service.FuncionarioService;

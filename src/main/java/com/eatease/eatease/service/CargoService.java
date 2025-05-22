@@ -1,7 +1,6 @@
 package com.eatease.eatease.service;
 
 import com.eatease.eatease.model.Cargo;
-import com.eatease.eatease.model.Funcionario;
 import com.eatease.eatease.repository.CargoRepository;
 
 import java.util.Optional;
