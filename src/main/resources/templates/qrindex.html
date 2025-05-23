@@ -279,8 +279,9 @@
 
         let currentPratoTypeIndex = 0;
 
-        // Carrega o carrinho do localStorage
-        cart.loadFromStorage();
+        // Limpar o carrinho quando a página é carregada pela primeira vez
+        localStorage.removeItem('cart');
+        cart.clear();
 
         // Função para iniciar o fluxo do pedido diretamente (sem passar pela seleção de menu)
         function initializeOrderFlow() {
@@ -690,7 +691,7 @@
             console.log('Enviando pedido:', pedidoData);
 
             // Enviar o pedido para o endpoint /pedido/pedirQR
-            fetch('/pedido/pedirQR?key='+key, {
+            fetch('/pedido/pedirQR?key=' + key, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -737,16 +738,18 @@
 
                     // Botão para reiniciar o processo
                     document.getElementById('new-order-btn').addEventListener('click', () => {
-                        // Limpar carrinho
+                        // Limpar carrinho completamente (incluindo no localStorage)
                         cart.clear();
+                        localStorage.removeItem('cart');
 
-                        // Reiniciar para a primeira etapa
+                        // Reiniciar para a primeira etapa - voltar para seleção de menu
                         currentPratoTypeIndex = 0;
-                        loadItemsByPratoType(pratoTypes[currentPratoTypeIndex].id);
 
-                        // Restaurar UI
-                        orderProgress.classList.remove('hidden');
-                        updateStepUI();
+                        // Mostrar a seleção de menus em vez de ir direto para os itens
+                        itemContainer.classList.add('hidden');
+                        menuContainer.classList.remove('hidden');
+                        orderProgress.classList.add('hidden');
+                        titleEl.innerHTML = '<i class="bx bx-food-menu"></i> <span>Escolhe o teu Menu</span>';
                     });
                 })
                 .catch(error => {
