@@ -98,4 +98,15 @@ public class MenuController {
         }
 
     }
+
+    @GetMapping("/getMenuItens")
+    public ResponseEntity<?> getMenuItens(@RequestParam Long id,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(menuService.getMenuItens(id));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Erro ao obter itens do menu: " + e.getMessage());
+        }
+    }
 }

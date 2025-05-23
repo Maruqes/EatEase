@@ -243,4 +243,15 @@ public class ItemService {
 
         return menusUsingItem;
     }
+
+    public List<Item> getItemsByIds(long[] ids) {
+        List<Item> items = new ArrayList<>();
+        for (Long id : ids) {
+            Optional<Item> itemOpt = itemRepository.findById(id);
+            if (itemOpt.isPresent()) {
+                items.add(itemOpt.get());
+            }
+        }
+        return items;
+    }
 }

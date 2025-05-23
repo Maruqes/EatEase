@@ -1,5 +1,6 @@
 package com.eatease.eatease.service;
 
+import com.eatease.eatease.model.Item;
 import com.eatease.eatease.model.Menu;
 import com.eatease.eatease.repository.MenuRepository;
 
@@ -151,7 +152,8 @@ public class MenuService {
      * @return null se bem-sucedido, mensagem de erro caso contrário
      */
     @Transactional
-    public Menu updateMenu(Long id, String nome, String descricao, List<Long> itemsIds, Long tipoMenuId) throws Exception {
+    public Menu updateMenu(Long id, String nome, String descricao, List<Long> itemsIds, Long tipoMenuId)
+            throws Exception {
         // Validate input parameters
         if (id == null) {
             throw new IllegalArgumentException("O ID do menu não pode ser nulo.");
@@ -168,7 +170,8 @@ public class MenuService {
 
         Menu menu = menuOptional.get();
 
-        // Check if the new name conflicts with existing menus (excluding the current menu)
+        // Check if the new name conflicts with existing menus (excluding the current
+        // menu)
         if (!nome.equals(menu.getNome()) && menuRepository.existsByNome(nome)) {
             throw new IllegalArgumentException("Já existe outro menu com o nome '" + nome + "'.");
         }
@@ -211,5 +214,16 @@ public class MenuService {
 
         Menu savedMenu = menuRepository.save(menu);
         return savedMenu;
+    }
+
+    public List<Item> getMenuItens(Long id) throws Exception {
+        Optional<Menu> menuOptional = menuRepository.findById(id);
+        if (menuOptional.isPresent()) {
+            Menu menu = menuOptional.get();
+            long[] itemsIds = menu.getItems_id();
+            return itemService.getItemsByIds(itemsIds);
+        } else {
+            throw new Exception("Menu com ID " + id + " não encontrado.");
+        }
     }
 }
