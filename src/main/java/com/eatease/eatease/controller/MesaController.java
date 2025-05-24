@@ -229,4 +229,23 @@ public class MesaController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mesa não encontrada");
         }
     }
+
+    @GetMapping("/getMesaNumberById")
+    public ResponseEntity<String> getMesaNumberById(
+            @RequestParam long mesaId,
+            @Parameter(hidden = true) HttpServletRequest request) {
+
+        // Verificação de autenticação - todos os funcionários podem ver as mesas
+        String validUsername = Login.checkLoginWithCargos(request, "GERENTE", "COZINHEIRO", "FUNCIONARIO");
+        if (validUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Não autenticado");
+        }
+
+        Optional<Mesa> mesaOpt = mesaService.getMesaById(mesaId);
+        if (mesaOpt.isPresent()) {
+            return ResponseEntity.ok(String.valueOf(mesaOpt.get().getNumero()));
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mesa não encontrada");
+        }
+    }
 }

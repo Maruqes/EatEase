@@ -2,6 +2,9 @@
 package com.eatease.eatease.controller;
 
 import org.springframework.http.ResponseEntity;
+
+import java.util.Optional;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -102,6 +105,23 @@ public class FuncionarioController {
         }
 
         return ResponseEntity.ok(funcionarioService.getAllFuncionarios());
+    }
+
+    @GetMapping("/getFuncionarioNameById")
+    public ResponseEntity<String> getFuncionarioNameById(@RequestParam long funcionarioId,
+            @Parameter(hidden = true) HttpServletRequest request) {
+
+        String validUsername = Login.checkLoginWithCargos(request, "GERENTE", "COZINHEIRO", "FUNCIONARIO");
+        if (validUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Não autenticado ou sem permissões");
+        }
+        Optional<Funcionario> funcionario = funcionarioService.getFuncionarioById(funcionarioId);
+        if (funcionario != null) {
+            return ResponseEntity.ok(funcionario.map(Funcionario::getNome)
+                    .orElse("Funcionário não encontrado"));
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Funcionário não encontrado");
+        }
     }
 
     @PostMapping("/updateFuncionario")
