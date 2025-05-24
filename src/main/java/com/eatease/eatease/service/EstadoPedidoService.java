@@ -3,12 +3,19 @@ package com.eatease.eatease.service;
 import com.eatease.eatease.model.EstadoPedido;
 import com.eatease.eatease.repository.EstadoPedidoRepository;
 
+import java.util.Optional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @Service
 public class EstadoPedidoService {
 
     private final EstadoPedidoRepository estadoPedidoRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public EstadoPedidoService(EstadoPedidoRepository estadoPedidoRepository) {
         this.estadoPedidoRepository = estadoPedidoRepository;

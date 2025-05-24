@@ -87,7 +87,8 @@ public class PedidoService {
                 return false;
             }
 
-            // remover os ingredientes retirados do prato
+            // remover os ingredientes retirados do prato da lista de ingredientes que vai
+            // ser removida do stock
             for (Long ingredienteRemover : ingredientesRemover) {
                 for (IngredienteQuantDTO ingrediente : ingredientes) {
                     if (ingrediente.getIngredienteId() == ingredienteRemover) {
@@ -192,17 +193,61 @@ public class PedidoService {
         return pedidoRepository.findById(id);
     }
 
+    private void retornarIngredientesAoStock(Pedido pedido) {
+        List<Long> itens = pedido.getItensIds();
+        List<Long> ingredientesRemover = pedido.getIngredientesRemover();
+
+        // Se a lista de ingredientes a remover é null, inicializa como lista vazia
+        if (ingredientesRemover == null) {
+            ingredientesRemover = new java.util.ArrayList<>();
+        }
+
+        for (Long itemId : itens) {
+            Item item = itemService.getById(itemId);
+            if (item != null) {
+                List<IngredienteQuantDTO> ingredientes = itemService.getIngredientesByItemId(item.getId());
+                if (ingredientes != null) {
+                    for (IngredienteQuantDTO ingrediente : ingredientes) {
+                        // Só retorna ao stock os ingredientes que foram efetivamente consumidos
+                        // (ou seja, que NÃO estão na lista de ingredientes removidos)
+                        if (!ingredientesRemover.contains(ingrediente.getIngredienteId())) {
+                            ingredientesService.addStock(ingrediente.getIngredienteId(), ingrediente.getQuantidade());
+                        }
+                    }
+                }
+            }
+        }
+        System.err.println("Ingredientes retornados ao estoque com sucesso (excluindo ingredientes removidos).");
+    }
+
+    @Transactional
     public String setEstadoPedido(long id, long estadoPedido_id) {
         Optional<Pedido> pedidoOpt = pedidoRepository.findById(id);
-        if (pedidoOpt.isPresent()) {
-            Pedido pedido = pedidoOpt.get();
-            pedido.setEstadoPedido_id(estadoPedido_id);
-            pedidoRepository.save(pedido);
-            System.err.println("Estado do pedido atualizado com sucesso.");
-            return null; // sucesso
-        } else {
+        if (pedidoOpt.isEmpty()) {
             System.err.println("O pedido não existe.");
             return "O pedido não existe.";
         }
+
+        Pedido pedido = pedidoOpt.get();
+        long currentEstadoPedidoId = pedido.getEstadoPedido_id();
+
+        if (currentEstadoPedidoId == 4) {
+            System.err.println("O pedido já está cancelado.");
+            return "O pedido já está cancelado.";
+        }
+
+        if (currentEstadoPedidoId == estadoPedido_id) {
+            System.err.println("O pedido já está no mesmo estado.");
+            return "O pedido já está no mesmo estado.";
+        }
+
+        if (estadoPedido_id == 4) { // ID do estado "Cancelado"
+            retornarIngredientesAoStock(pedido);
+        }
+
+        pedido.setEstadoPedido_id(estadoPedido_id);
+        pedidoRepository.save(pedido);
+        System.err.println("Estado do pedido atualizado com sucesso.");
+        return null; // sucesso
     }
 }

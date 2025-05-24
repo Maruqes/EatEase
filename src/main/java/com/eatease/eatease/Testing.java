@@ -41,11 +41,20 @@ public class Testing {
                 cargoService.createCargo("COZINHEIRO"); // id 3
                 cargoService.createCargo("LIMPEZA"); // id 4
 
-                estadoPedidoService.createEstadoPedido("PENDING"); //5
-                estadoPedidoService.createEstadoPedido("READY"); //2
-                estadoPedidoService.createEstadoPedido("IN_PREPARATION"); //3
-                estadoPedidoService.createEstadoPedido("SERVED"); //4
- 
+                // dar drop a table e rodar dnv genra direito
+                estadoPedidoService.createEstadoPedido("IN_PREPARATION");
+                estadoPedidoService.createEstadoPedido("READY");
+                estadoPedidoService.createEstadoPedido("SERVED");
+                estadoPedidoService.createEstadoPedido("CANCELED");
+                estadoPedidoService.createEstadoPedido("PENDING");
+                /*
+                 * IN_PREPARATION - 1
+                 * READY - 2
+                 * SERVED - 3
+                 * CANCELED - 4
+                 * PENDING - 5
+                 */
+
                 unidadeMedidaService.createUnidadeMedida("quilos");
                 unidadeMedidaService.createUnidadeMedida("gramas");
                 unidadeMedidaService.createUnidadeMedida("litros");
