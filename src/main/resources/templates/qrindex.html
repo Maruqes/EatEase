@@ -297,8 +297,8 @@
             // Configurar comportamentos dos botões de navegação para o fluxo direto
             nextBtn.onclick = function () {
                 if (currentPratoTypeIndex === pratoTypes.length - 1) {
-                    // Finalizar pedido
-                    completeOrder();
+                    // Mostrar tela de confirmação antes de finalizar
+                    showOrderConfirmation();
                 } else {
                     // Ir para próximo tipo de prato
                     currentPratoTypeIndex++;
@@ -359,7 +359,7 @@
             }
 
             if (currentPratoTypeIndex === pratoTypes.length - 1) {
-                nextBtn.innerHTML = 'Finalizar Pedido <i class="bx bx-check ml-1"></i>';
+                nextBtn.innerHTML = 'Continuar <i class="bx bx-check ml-1"></i>';
                 nextBtn.className = 'px-6 py-2.5 bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 transition-all ml-auto font-medium flex items-center gap-2';
             } else {
                 nextBtn.innerHTML = 'Próximo <i class="bx bx-right-arrow-alt"></i>';
@@ -369,6 +369,75 @@
             nextBtn.classList.remove('hidden');
             nextBtn.style.display = 'flex';
             nextBtn.style.alignItems = 'center';
+        }
+
+        // Função para mostrar a tela de confirmação do pedido
+        function showOrderConfirmation() {
+            // Esconder o container de itens
+            itemContainer.classList.add('hidden');
+
+            // Esconder navegação e barra de progresso
+            backBtn.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            orderProgress.classList.add('hidden');
+
+            // Atualizar título
+            titleEl.innerHTML = '<i class="bx bx-check-circle"></i> <span>Confirmar Pedido</span>';
+
+            // Criar tela de confirmação
+            const confirmationScreen = document.createElement('div');
+            confirmationScreen.className = 'bg-white/90 rounded-xl p-8 shadow-xl backdrop-blur-md text-center';
+            confirmationScreen.innerHTML = `
+                <div class="w-20 h-20 rounded-full bg-blue-100 mx-auto flex items-center justify-center mb-6">
+                    <i class="bx bx-clipboard text-4xl text-blue-600"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Resumo do Pedido</h2>
+                <div class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+                    ${cart.items.map(item =>
+                `<div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                            <div>
+                                <span class="font-medium">${item.nome}</span>
+                                <span class="text-sm text-gray-500 ml-2">x${item.quantity}</span>
+                            </div>
+                            <span class="font-medium">€${(item.preco * item.quantity).toFixed(2)}</span>
+                        </div>`
+            ).join('')}
+                    <div class="flex justify-between items-center pt-4 mt-4 border-t-2 border-gray-300">
+                        <span class="text-lg font-bold text-gray-800">Total:</span>
+                        <span class="text-xl font-bold text-brand-dark">€${cart.total.toFixed(2)}</span>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-8">Pretende adicionar mais alguma coisa ao seu pedido ou finalizar agora?</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button id="add-more-btn" class="bg-brand text-white px-8 py-3 rounded-lg hover:bg-brand-dark transition-colors flex items-center justify-center gap-2">
+                        <i class="bx bx-plus"></i>
+                        Pedir mais alguma coisa
+                    </button>
+                    <button id="finalize-order-btn" class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                        <i class="bx bx-check"></i>
+                        Finalizar pedido agora
+                    </button>
+                </div>
+            `;
+
+            itemContainer.innerHTML = '';
+            itemContainer.appendChild(confirmationScreen);
+            itemContainer.classList.remove('hidden');
+            itemContainer.className = 'flex items-center justify-center';
+
+            // Event listeners para os botões
+            document.getElementById('add-more-btn').addEventListener('click', () => {
+                // Voltar para seleção de menus
+                itemContainer.classList.add('hidden');
+                menuContainer.classList.remove('hidden');
+                orderProgress.classList.add('hidden');
+                titleEl.innerHTML = '<i class="bx bx-food-menu"></i> <span>Escolhe o teu Menu</span>';
+            });
+
+            document.getElementById('finalize-order-btn').addEventListener('click', () => {
+                // Finalizar pedido diretamente
+                finalizeOrder();
+            });
         }
 
         // Função para carregar itens por tipo de prato
@@ -668,8 +737,8 @@
         // para se adaptar a cada fluxo (seleção de menu ou pedido direto)
         // Ver funções selectMenu e initializeOrderFlow
 
-        // Função de finalização do pedido
-        function completeOrder() {
+        // Função de finalização do pedido (apenas mostra agradecimento)
+        function finalizeOrder() {
             if (cart.items.length === 0) {
                 alert('Por favor, selecione pelo menos um item antes de finalizar o pedido.');
                 return;
@@ -710,23 +779,20 @@
                     // Esconder loader
                     loader.classList.add('hidden');
 
-                    // Mostrar mensagem de confirmação
-                    const confirmationMessage = document.createElement('div');
-                    confirmationMessage.className = 'bg-white/90 rounded-xl p-8 shadow-xl backdrop-blur-md text-center';
-                    confirmationMessage.innerHTML = `
-                    <div class="w-20 h-20 rounded-full bg-green-100 mx-auto flex items-center justify-center mb-4">
-                        <i class="bx bx-check text-4xl text-green-600"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Pedido Realizado!</h2>
-                    <p class="text-gray-600 mb-6">Seu pedido foi enviado para a cozinha e será entregue em breve.</p>
-                    <p class="text-xl font-semibold text-brand-dark mb-6">Total: €${cart.total.toFixed(2)}</p>
-                    <button id="new-order-btn" class="bg-brand text-white px-6 py-3 rounded-lg hover:bg-brand-dark transition-colors">
-                        Fazer Novo Pedido
-                    </button>
-                `;
+                    // Mostrar apenas mensagem de agradecimento
+                    const thankYouMessage = document.createElement('div');
+                    thankYouMessage.className = 'bg-white/90 rounded-xl p-8 shadow-xl backdrop-blur-md text-center';
+                    thankYouMessage.innerHTML = `
+                        <div class="w-20 h-20 rounded-full bg-green-100 mx-auto flex items-center justify-center mb-4">
+                            <i class="bx bx-check text-4xl text-green-600"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Obrigado pelo seu pedido!</h2>
+                        <p class="text-gray-600 mb-4">O seu pedido foi recebido e será preparado em breve.</p>
+                        <p class="text-xl font-semibold text-brand-dark">Total: €${cart.total.toFixed(2)}</p>
+                    `;
 
                     itemContainer.innerHTML = '';
-                    itemContainer.appendChild(confirmationMessage);
+                    itemContainer.appendChild(thankYouMessage);
                     itemContainer.classList.remove('hidden');
                     itemContainer.className = 'flex items-center justify-center';
 
@@ -736,21 +802,11 @@
                     orderProgress.classList.add('hidden');
                     cartSummary.classList.add('hidden');
 
-                    // Botão para reiniciar o processo
-                    document.getElementById('new-order-btn').addEventListener('click', () => {
-                        // Limpar carrinho completamente (incluindo no localStorage)
+                    // Limpar carrinho após 3 segundos (opcional)
+                    setTimeout(() => {
                         cart.clear();
                         localStorage.removeItem('cart');
-
-                        // Reiniciar para a primeira etapa - voltar para seleção de menu
-                        currentPratoTypeIndex = 0;
-
-                        // Mostrar a seleção de menus em vez de ir direto para os itens
-                        itemContainer.classList.add('hidden');
-                        menuContainer.classList.remove('hidden');
-                        orderProgress.classList.add('hidden');
-                        titleEl.innerHTML = '<i class="bx bx-food-menu"></i> <span>Escolhe o teu Menu</span>';
-                    });
+                    }, 3000);
                 })
                 .catch(error => {
                     console.error('Erro ao processar pedido:', error);
@@ -762,15 +818,15 @@
                     const errorMessage = document.createElement('div');
                     errorMessage.className = 'bg-white/90 rounded-xl p-8 shadow-xl backdrop-blur-md text-center';
                     errorMessage.innerHTML = `
-                    <div class="w-20 h-20 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4">
-                        <i class="bx bx-error text-4xl text-red-600"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Erro ao Processar Pedido</h2>
-                    <p class="text-gray-600 mb-6">Ocorreu um erro ao enviar seu pedido. Por favor, tente novamente.</p>
-                    <button id="try-again-btn" class="bg-brand text-white px-6 py-3 rounded-lg hover:bg-brand-dark transition-colors">
-                        Tentar Novamente
-                    </button>
-                `;
+                        <div class="w-20 h-20 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4">
+                            <i class="bx bx-error text-4xl text-red-600"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Erro ao Processar Pedido</h2>
+                        <p class="text-gray-600 mb-6">Ocorreu um erro ao enviar seu pedido. Por favor, tente novamente.</p>
+                        <button id="try-again-btn" class="bg-brand text-white px-6 py-3 rounded-lg hover:bg-brand-dark transition-colors">
+                            Tentar Novamente
+                        </button>
+                    `;
 
                     itemContainer.innerHTML = '';
                     itemContainer.appendChild(errorMessage);
@@ -779,7 +835,7 @@
 
                     // Botão para tentar novamente
                     document.getElementById('try-again-btn').addEventListener('click', () => {
-                        completeOrder(); // Tentar enviar o pedido novamente
+                        showOrderConfirmation(); // Voltar para a tela de confirmação
                     });
                 });
         }
@@ -861,8 +917,8 @@
                             // Atualizar os botões de navegação para navegar pelos tipos de itens do menu
                             nextBtn.onclick = function () {
                                 if (currentPratoTypeIndex === pratoTypes.length - 1) {
-                                    // Finalizar pedido
-                                    completeOrder();
+                                    // Mostrar tela de confirmação antes de finalizar
+                                    showOrderConfirmation();
                                 } else {
                                     // Ir para próximo tipo de prato
                                     currentPratoTypeIndex++;

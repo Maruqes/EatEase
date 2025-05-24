@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eatease.eatease.model.Funcionario;
+import com.eatease.eatease.model.Mesa;
 import com.eatease.eatease.service.FuncionarioService;
 import com.eatease.eatease.service.Login;
 import com.eatease.eatease.service.MesaService;
@@ -18,6 +19,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -54,8 +57,11 @@ public class QRController {
         if (funcionario == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Funcionário não encontrado");
         }
-        if (mesaService.getMesaById(mesaID) == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Mesa não encontrada");
+
+        Optional<Mesa> mesaOpt = mesaService.getMesaById(mesaID);
+        if (mesaOpt.isEmpty()) {
+            System.err.println("A mesa não existe.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mesa não encontrada");
         }
 
         try {
@@ -70,7 +76,7 @@ public class QRController {
 
     @GetMapping("/qrPage")
     public ResponseEntity<String> getQRPage(@RequestParam String key) {
-        if(!qrService.isKeyValidAndUnused(key)) {
+        if (!qrService.isKeyValidAndUnused(key)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("QR Code inválido ou já utilizado");
         }
         try {
