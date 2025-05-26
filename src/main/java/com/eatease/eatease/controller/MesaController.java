@@ -11,8 +11,6 @@ import com.eatease.eatease.service.Login;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NegativeOrZero;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -42,7 +40,7 @@ public class MesaController {
     public ResponseEntity<?> createMesa(
             @RequestParam @NotNull @Min(1) int numero,
             @RequestParam(defaultValue = "true") boolean estadoLivre,
-            @RequestParam @NotBlank @Positive int capacidade,
+            @RequestParam @NotNull @Positive int capacidade,
             @Parameter(hidden = true) HttpServletRequest request) {
 
         // Verificação de autenticação - apenas GERENTE pode criar mesas
