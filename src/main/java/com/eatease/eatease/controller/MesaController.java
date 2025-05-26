@@ -263,7 +263,7 @@ public class MesaController {
         Optional<Mesa> mesaOpt = mesaService.getMesaById(mesaId);
         if (mesaOpt.isPresent()) {
             Mesa mesa = mesaOpt.get();
-            return ResponseEntity.ok(String.format("{\"pos_x\": %d, \"pos_y\": %d}", mesa.getPos_x(), mesa.getPos_y()));
+            return ResponseEntity.ok(String.format("{\"pos_x\": %f, \"pos_y\": %f}", mesa.getPos_x(), mesa.getPos_y()));
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"error\": \"Mesa não encontrada\"}");
         }
@@ -272,8 +272,8 @@ public class MesaController {
     @PostMapping("/updatePosition")
     public ResponseEntity<String> updateMesaPosition(
             @RequestParam long id,
-            @RequestParam int pos_x,
-            @RequestParam int pos_y,
+            @RequestParam float pos_x,
+            @RequestParam float pos_y,
             @Parameter(hidden = true) HttpServletRequest request) {
 
         // Verificação de autenticação - apenas GERENTE pode atualizar posições

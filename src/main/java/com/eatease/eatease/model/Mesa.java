@@ -13,8 +13,8 @@ public class Mesa {
     private int numero;
     private boolean estadoLivre; // true=livre, false=ocupado
 
-    private int pos_x;
-    private int pos_y;
+    private float pos_x;
+    private float pos_y;
 
     public long getId() {
         return id;
@@ -40,19 +40,19 @@ public class Mesa {
         this.estadoLivre = estadoLivre;
     }
 
-    public int getPos_x() {
+    public float getPos_x() {
         return pos_x;
     }
 
-    public void setPos_x(int pos_x) {
+    public void setPos_x(float pos_x) {
         this.pos_x = pos_x;
     }
 
-    public int getPos_y() {
+    public float getPos_y() {
         return pos_y;
     }
 
-    public void setPos_y(int pos_y) {
+    public void setPos_y(float pos_y) {
         this.pos_y = pos_y;
     }
 

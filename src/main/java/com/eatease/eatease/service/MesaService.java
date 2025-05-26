@@ -32,7 +32,7 @@ public class MesaService {
         }
     }
 
-    public void SetMesaPos(long id, int pos_x, int pos_y) {
+    public void SetMesaPos(long id, float pos_x, float pos_y) {
         Optional<Mesa> optMesa = mesaRepository.findById(id);
         if (optMesa.isPresent()) {
             Mesa mesa = optMesa.get();
@@ -45,13 +45,13 @@ public class MesaService {
         }
     }
 
-    public int getX(long id) {
+    public float getX(long id) {
         return mesaRepository.findById(id)
                 .map(Mesa::getPos_x)
                 .orElseThrow(() -> new IllegalArgumentException("Mesa não encontrada com ID: " + id));
     }
 
-    public int getY(long id) {
+    public float getY(long id) {
         return mesaRepository.findById(id)
                 .map(Mesa::getPos_y)
                 .orElseThrow(() -> new IllegalArgumentException("Mesa não encontrada com ID: " + id));
