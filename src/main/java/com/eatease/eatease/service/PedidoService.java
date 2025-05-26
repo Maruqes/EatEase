@@ -203,7 +203,7 @@ public class PedidoService {
         }
 
         for (Long itemId : itens) {
-            Item item = itemService.getById(itemId);
+            Item item = itemService.getByIdNoUpdate(itemId);
             if (item != null) {
                 List<IngredienteQuantDTO> ingredientes = itemService.getIngredientesByItemId(item.getId());
                 if (ingredientes != null) {

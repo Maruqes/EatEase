@@ -138,14 +138,6 @@ public class ItemService {
         return items;
     }
 
-    public List<Item> getByPratoId(long tipoPratoId) throws IllegalArgumentException {
-        if (!tipoPratoService.checkTipoPratoExists(tipoPratoId)) {
-            System.err.println("O tipo de prato com ID " + tipoPratoId + " não existe.");
-            throw new IllegalArgumentException("O tipo de prato com ID " + tipoPratoId + " não existe.");
-        }
-        return itemRepository.findByTipoPratoId(tipoPratoId);
-    }
-
     /* ---------------------------- UPDATE ----------------------------- */
     public Item editItem(long id,
             String nome,
@@ -256,7 +248,22 @@ public class ItemService {
         return itemRepository.existsById(id);
     }
 
-    public Item getById(long id) {
+    public List<Item> getByPratoId(long tipoPratoId) throws IllegalArgumentException {
+        if (!tipoPratoService.checkTipoPratoExists(tipoPratoId)) {
+            System.err.println("O tipo de prato com ID " + tipoPratoId + " não existe.");
+            throw new IllegalArgumentException("O tipo de prato com ID " + tipoPratoId + " não existe.");
+        }
+        return itemRepository.findByTipoPratoId(tipoPratoId);
+    }
+
+    public Item getByIdNoUpdate(long id) {
+        if (itemRepository.existsById(id)) {
+            return itemRepository.findById(id).get();
+        }
+        return null;
+    }
+
+    public Item getByIdUpdate(long id) {
         if (itemRepository.existsById(id)) {
             // update stock before returning
             try {
