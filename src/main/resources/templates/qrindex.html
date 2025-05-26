@@ -471,15 +471,18 @@
 
         // Renderizar lista de itens
         function renderItems(items) {
-            if (items.length === 0) {
+            // Filtrar items que têm stockAtual maior que 0
+            const availableItems = items.filter(item => item.stockAtual > 0);
+
+            if (availableItems.length === 0) {
                 const emptyMessage = document.createElement('div');
                 emptyMessage.className = 'col-span-3 text-center py-10 text-gray-500';
-                emptyMessage.innerHTML = `<i class="bx bx-dish text-4xl mb-2"></i><p>Nenhum item encontrado para esta categoria.</p>`;
+                emptyMessage.innerHTML = `<i class="bx bx-dish text-4xl mb-2"></i><p>Nenhum item disponível para esta categoria.</p>`;
                 itemContainer.appendChild(emptyMessage);
                 return;
             }
 
-            items.forEach((item, index) => {
+            availableItems.forEach((item, index) => {
                 const itemElement = renderItem(item, index);
                 itemContainer.appendChild(itemElement);
             });
@@ -968,8 +971,8 @@
 
         // Função para mostrar itens por tipo de prato (usado após carregar os itens do menu)
         function showItemsByType(items, typePratoId) {
-            // Filtrar itens pelo tipo de prato
-            const filteredItems = items.filter(item => item.tipoPrato_id === typePratoId);
+            // Filtrar itens pelo tipo de prato e que tenham stockAtual maior que 0
+            const filteredItems = items.filter(item => item.tipoPrato_id === typePratoId && item.stockAtual > 0);
 
             // Limpar container e esconder loader
             itemContainer.innerHTML = '';
@@ -979,7 +982,7 @@
             if (filteredItems.length === 0) {
                 const emptyMessage = document.createElement('div');
                 emptyMessage.className = 'col-span-3 text-center py-10 text-gray-500';
-                emptyMessage.innerHTML = `<i class="bx bx-dish text-4xl mb-2"></i><p>Nenhum item encontrado para esta categoria.</p>`;
+                emptyMessage.innerHTML = `<i class="bx bx-dish text-4xl mb-2"></i><p>Nenhum item disponível para esta categoria.</p>`;
                 itemContainer.appendChild(emptyMessage);
             } else {
                 filteredItems.forEach((item, index) => {
