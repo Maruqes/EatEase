@@ -12,6 +12,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 public class DashBoardService {
@@ -24,11 +26,6 @@ public class DashBoardService {
         this.itemService = itemService;
     }
 
-    /**
-     * Calcula todas as métricas do dashboard para hoje
-     * 
-     * @return DashBoardDTO com todas as métricas
-     */
     public DashBoardDTO calcularMetricasDashboard() {
         // Pegar data de hoje
         LocalDate hoje = LocalDate.now();
@@ -62,12 +59,6 @@ public class DashBoardService {
         return dashboard;
     }
 
-    /**
-     * Calcula o total de vendas (faturamento) de um dia específico
-     * 
-     * @param data data para calcular
-     * @return valor total faturado em euros
-     */
     public BigDecimal calcularVendasDia(LocalDate data) {
         List<Pedido> pedidos = buscarPedidosValidosDia(data);
         BigDecimal totalVendas = BigDecimal.ZERO;
@@ -81,24 +72,11 @@ public class DashBoardService {
         return totalVendas.setScale(2, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Conta o número de pedidos de um dia específico
-     * 
-     * @param data data para contar
-     * @return número de pedidos
-     */
     public int contarPedidosDia(LocalDate data) {
         List<Pedido> pedidos = buscarPedidosValidosDia(data);
         return pedidos.size();
     }
 
-    /**
-     * Calcula o ticket médio (valor médio por pedido)
-     * 
-     * @param vendas        total de vendas
-     * @param numeroPedidos número de pedidos
-     * @return ticket médio
-     */
     public BigDecimal calcularTicketMedio(BigDecimal vendas, int numeroPedidos) {
         if (numeroPedidos == 0) {
             return BigDecimal.ZERO;
@@ -106,13 +84,6 @@ public class DashBoardService {
         return vendas.divide(BigDecimal.valueOf(numeroPedidos), 2, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Calcula a percentual de mudança entre hoje e ontem
-     * 
-     * @param vendasHoje  vendas de hoje
-     * @param vendasOntem vendas de ontem
-     * @return percentual de mudança
-     */
     public BigDecimal calcularPercentualMudanca(BigDecimal vendasHoje, BigDecimal vendasOntem) {
         if (vendasOntem.compareTo(BigDecimal.ZERO) == 0) {
             // Se ontem não houve vendas, retorna 100% se hoje houve vendas, senão 0%
@@ -126,12 +97,6 @@ public class DashBoardService {
         return percentual.setScale(1, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Busca pedidos válidos (não cancelados) de um dia específico
-     * 
-     * @param data data para buscar
-     * @return lista de pedidos válidos
-     */
     private List<Pedido> buscarPedidosValidosDia(LocalDate data) {
         String dataInicio = data.atStartOfDay().toString();
         String dataFim = data.atTime(23, 59, 59).toString();
@@ -139,38 +104,30 @@ public class DashBoardService {
         return pedidoRepository.findValidPedidosByDateRange(dataInicio, dataFim);
     }
 
-    /**
-     * Calcula o valor total de um pedido específico
-     * 
-     * @param pedido pedido para calcular
-     * @return valor total do pedido
-     */
     private BigDecimal calcularValorPedido(Pedido pedido) {
-        BigDecimal valorTotal = BigDecimal.ZERO;
-
         List<Long> itensIds = pedido.getItensIds();
-        if (itensIds != null) {
-            for (Long itemId : itensIds) {
-                try {
-                    Item item = itemService.getByIdNoUpdate(itemId);
-                    if (item != null) {
-                        valorTotal = valorTotal.add(BigDecimal.valueOf(item.getPreco()));
-                    }
-                } catch (Exception e) {
-                    System.err.println("Erro ao buscar item " + itemId + ": " + e.getMessage());
-                }
-            }
+        if (itensIds == null || itensIds.isEmpty()) {
+            return BigDecimal.ZERO;
         }
 
-        return valorTotal;
+        List<CompletableFuture<BigDecimal>> futures = itensIds.stream()
+                .map(itemId -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        Item item = itemService.getByIdNoUpdate(itemId);
+                        return item != null ? BigDecimal.valueOf(item.getPreco()) : BigDecimal.ZERO;
+                    } catch (Exception e) {
+                        System.err.println("Erro ao buscar item " + itemId + ": " + e.getMessage());
+                        return BigDecimal.ZERO;
+                    }
+                }))
+                .collect(Collectors.toList());
+
+        // Espera que todos os futures acabem e soma os resultados
+        return futures.stream()
+                .map(CompletableFuture::join) // Espera que cada future termine
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /**
-     * Método auxiliar para formatar o percentual com sinal e seta
-     * 
-     * @param percentual valor percentual
-     * @return string formatada (ex: "↑ +8.5%" ou "↓ -3.2%")
-     */
     public String formatarComparacaoPercentual(BigDecimal percentual) {
         String sinal = percentual.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "";
         String setinha = percentual.compareTo(BigDecimal.ZERO) >= 0 ? "↑" : "↓";

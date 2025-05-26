@@ -16,13 +16,14 @@ public class MesaService {
         this.mesaRepository = mesaRepository;
     }
 
-    public Mesa createMesa(int numero, boolean estadoLivre) throws Exception {
+    public Mesa createMesa(int numero, boolean estadoLivre, int capacidade) throws Exception {
         if (mesaRepository.findByNumero(numero).isEmpty()) {
             Mesa mesa = new Mesa();
             mesa.setNumero(numero);
             mesa.setEstadoLivre(estadoLivre);
             mesa.setPos_x(0); // Posição X padrão
             mesa.setPos_y(0); // Posição Y padrão
+            mesa.setCapacidade(capacidade);
             mesaRepository.save(mesa);
             System.err.println("Mesa adicionada com sucesso.");
             return mesa;

@@ -16,6 +16,8 @@ public class Mesa {
     private float pos_x;
     private float pos_y;
 
+    private int capacidade;
+
     public long getId() {
         return id;
     }
@@ -56,4 +58,11 @@ public class Mesa {
         this.pos_y = pos_y;
     }
 
+    public int getCapacidade() {
+        return capacidade;
+    }
+
+    public void setCapacidade(int capacidade) {
+        this.capacidade = capacidade;
+    }
 }
