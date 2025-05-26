@@ -660,7 +660,7 @@
 
             // Verificar se o item já está no carrinho
             const existingCartItem = cart.items.find(i => i.id === item.id);
-
+             
             if (existingCartItem) {
                 // Se já está no carrinho, mostrar controle de quantidade
                 const quantityControl = document.createElement('div');
@@ -671,6 +671,17 @@
                 decreaseBtn.className = 'w-8 h-8 flex items-center justify-center text-gray-600 hover:text-brand';
                 decreaseBtn.innerHTML = '<i class="bx bx-minus"></i>';
                 decreaseBtn.addEventListener('click', () => {
+                    if (existingCartItem.quantity <= 1) {
+                        // Se a quantidade for 1, remover o item do carrinho
+                        cart.removeItem(item.id);
+                        // Recarregar o item para atualizar a UI
+                        const cardToUpdate = document.querySelector(`[data-item-id="${item.id}"]`);
+                        if (cardToUpdate) {
+                            const index = Array.from(itemContainer.children).indexOf(cardToUpdate);
+                            cardToUpdate.replaceWith(renderItem(item, index));
+                        }
+                        return;
+                    }
                     cart.updateQuantity(item.id, existingCartItem.quantity - 1);
                     // Recarregar o item para atualizar a UI
                     const cardToUpdate = document.querySelector(`[data-item-id="${item.id}"]`);
