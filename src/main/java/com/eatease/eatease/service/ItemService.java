@@ -8,10 +8,15 @@ import com.eatease.eatease.repository.MenuRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 public class ItemService {
@@ -22,6 +27,8 @@ public class ItemService {
     private final TipoPratoService tipoPratoService;
     private final MenuRepository menuRepository;
 
+    private final String uploadDir = "uploads/items/";
+
     public ItemService(ItemRepository itemRepository, ObjectMapper objectMapper,
             IngredientesService ingredientesService, TipoPratoService tipoPratoService,
             MenuRepository menuRepository) {
@@ -30,6 +37,25 @@ public class ItemService {
         this.ingredientesService = ingredientesService;
         this.tipoPratoService = tipoPratoService;
         this.menuRepository = menuRepository;
+    }
+
+    private String savePhoto(MultipartFile file, String itemName) throws Exception {
+        // Create upload directory if it doesn't exist
+        Path uploadPath = Paths.get(uploadDir);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        // Generate unique filename
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String filename = itemName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + System.currentTimeMillis() + extension;
+
+        // Save file
+        Path filePath = uploadPath.resolve(filename);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        return filename;
     }
 
     // based on stock of ingredientes calculate stock of item
@@ -82,6 +108,7 @@ public class ItemService {
             float preco,
             List<IngredienteQuantDTO> ingredientes, // <-- alterado
             boolean eComposto,
+            MultipartFile foto,
             int stockAtual) throws Exception {
 
         if (itemRepository.findByNome(nome).isPresent()) {
@@ -108,6 +135,11 @@ public class ItemService {
         item.setPreco(preco);
         item.seteComposto(eComposto);
         item.setStockAtual(stockAtual);
+
+        if (foto != null && !foto.isEmpty()) {
+            String filename = savePhoto(foto, nome);
+            item.setFoto(filename);
+        }
 
         try {
             String json = objectMapper.writeValueAsString(ingredientes);
@@ -145,6 +177,7 @@ public class ItemService {
             float preco,
             List<IngredienteQuantDTO> ingredientes, // <-- alterado
             boolean eComposto,
+            MultipartFile foto,
             int stockAtual) throws Exception {
 
         Optional<Item> itemOpt = itemRepository.findById(id);
@@ -172,6 +205,11 @@ public class ItemService {
         item.setPreco(preco);
         item.seteComposto(eComposto);
         item.setStockAtual(stockAtual);
+
+        if (foto != null && !foto.isEmpty()) {
+            String filename = savePhoto(foto, nome);
+            item.setFoto(filename);
+        }
 
         try {
             String json = objectMapper.writeValueAsString(ingredientes);

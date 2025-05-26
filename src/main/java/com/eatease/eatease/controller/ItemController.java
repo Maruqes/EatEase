@@ -40,6 +40,7 @@ public class ItemController {
                     requestDTO.getPreco(),
                     requestDTO.getIngredientes(),
                     requestDTO.isComposto(),
+                    requestDTO.getFoto(),
                     0);
             itemService.SetCalculatedStockByItemId(res.getId());
             return ResponseEntity.ok(res);
@@ -85,6 +86,7 @@ public class ItemController {
                     requestDTO.getPreco(),
                     requestDTO.getIngredientes(),
                     requestDTO.isComposto(),
+                    requestDTO.getFoto(),
                     0);
             itemService.SetCalculatedStockByItemId(res.getId());
             return ResponseEntity.ok(res);

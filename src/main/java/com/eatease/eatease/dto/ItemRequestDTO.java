@@ -8,6 +8,8 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
+
 public class ItemRequestDTO {
 
     @NotBlank(message = "O nome não pode estar vazio")
@@ -25,6 +27,8 @@ public class ItemRequestDTO {
     private List<IngredienteQuantDTO> ingredientes;
 
     private boolean composto;
+
+    private MultipartFile foto;
 
     /* getters & setters – usa sempre WRAPPERS (Long/Float/Integer) */
     public String getNome() {
@@ -65,6 +69,14 @@ public class ItemRequestDTO {
 
     public void setComposto(boolean composto) {
         this.composto = composto;
+    }
+
+    public MultipartFile getFoto() {
+        return foto;
+    }
+
+    public void setFoto(MultipartFile foto) {
+        this.foto = foto;
     }
 
 }
