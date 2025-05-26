@@ -21,6 +21,8 @@ public class MesaService {
             Mesa mesa = new Mesa();
             mesa.setNumero(numero);
             mesa.setEstadoLivre(estadoLivre);
+            mesa.setPos_x(0); // Posição X padrão
+            mesa.setPos_y(0); // Posição Y padrão
             mesaRepository.save(mesa);
             System.err.println("Mesa adicionada com sucesso.");
             return mesa;
@@ -28,6 +30,31 @@ public class MesaService {
             System.err.println("A mesa já existe.");
             throw new IllegalArgumentException("A mesa já existe.");
         }
+    }
+
+    public void SetMesaPos(long id, int pos_x, int pos_y) {
+        Optional<Mesa> optMesa = mesaRepository.findById(id);
+        if (optMesa.isPresent()) {
+            Mesa mesa = optMesa.get();
+            mesa.setPos_x(pos_x);
+            mesa.setPos_y(pos_y);
+            mesaRepository.save(mesa);
+            System.err.println("Posição da mesa " + mesa.getNumero() + " atualizada.");
+        } else {
+            System.err.println("A mesa não existe.");
+        }
+    }
+
+    public int getX(long id) {
+        return mesaRepository.findById(id)
+                .map(Mesa::getPos_x)
+                .orElseThrow(() -> new IllegalArgumentException("Mesa não encontrada com ID: " + id));
+    }
+
+    public int getY(long id) {
+        return mesaRepository.findById(id)
+                .map(Mesa::getPos_y)
+                .orElseThrow(() -> new IllegalArgumentException("Mesa não encontrada com ID: " + id));
     }
 
     public List<Mesa> getAllMesas() {
