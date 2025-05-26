@@ -70,7 +70,7 @@ public class DashBoardController {
         try {
             LocalDate dataConsulta = LocalDate.parse(data, DateTimeFormatter.ISO_LOCAL_DATE);
             var vendas = dashBoardService.calcularVendasDia(dataConsulta);
-            return ResponseEntity.ok(String.format("€%.2f", vendas));
+            return ResponseEntity.ok(String.format("%.2f", vendas));
         } catch (DateTimeParseException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Formato de data inválido. Use: YYYY-MM-DD");
