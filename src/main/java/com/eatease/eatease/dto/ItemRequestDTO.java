@@ -28,7 +28,6 @@ public class ItemRequestDTO {
 
     private boolean composto;
 
-    private MultipartFile foto;
 
     /* getters & setters – usa sempre WRAPPERS (Long/Float/Integer) */
     public String getNome() {
@@ -70,13 +69,4 @@ public class ItemRequestDTO {
     public void setComposto(boolean composto) {
         this.composto = composto;
     }
-
-    public MultipartFile getFoto() {
-        return foto;
-    }
-
-    public void setFoto(MultipartFile foto) {
-        this.foto = foto;
-    }
-
 }
