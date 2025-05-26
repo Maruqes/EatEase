@@ -32,6 +32,50 @@ public class ItemService {
         this.menuRepository = menuRepository;
     }
 
+    // based on stock of ingredientes calculate stock of item
+    public int CalculateStockByItemId(long itemId) throws Exception {
+        // get ingredientes of item
+        List<IngredienteQuantDTO> ingredientes = getIngredientesByItemId(itemId);
+        if (ingredientes == null || ingredientes.isEmpty()) {
+            System.err.println("O item não tem ingredientes definidos.");
+            throw new Exception("O item não tem ingredientes definidos.");
+        }
+        int stock = Integer.MAX_VALUE; // Start with a large number
+        for (IngredienteQuantDTO ingrediente : ingredientes) {
+            long ingredienteId = ingrediente.getIngredienteId();
+            int quantidade = ingrediente.getQuantidade();
+
+            // Get stock of the ingredient
+            int ingredienteStock = ingredientesService.getStockById(ingredienteId);
+            if (ingredienteStock < quantidade) {
+                System.err.println("O stock do ingrediente " + ingredienteId + " é insuficiente.");
+                throw new Exception("O stock do ingrediente " + ingredienteId + " é insuficiente.");
+            }
+
+            // Calculate the stock of the item based on the ingredient stock
+            int itemStock = ingredienteStock / quantidade;
+            if (itemStock < stock) {
+                stock = itemStock; // Update the minimum stock
+            }
+        }
+        System.err.println("O stock do item " + itemId + " é: " + stock);
+        return stock; // Return the calculated stock
+    }
+
+    public void SetCalculatedStockByItemId(long itemId) throws Exception {
+        // Get the item by ID
+        Optional<Item> itemOpt = itemRepository.findById(itemId);
+        if (itemOpt.isEmpty()) {
+            System.err.println("O item com ID " + itemId + " não existe.");
+            throw new Exception("O item com ID " + itemId + " não existe.");
+        }
+        int stock = CalculateStockByItemId(itemId);
+        Item item = itemOpt.get();
+        item.setStockAtual(stock);
+        itemRepository.save(item);
+        System.err.println("O stock do item " + itemId + " foi atualizado para: " + stock);
+    }
+
     /* ---------------------------- CREATE ------------------------------ */
     public Item createItem(String nome,
             long tipoPratoId,

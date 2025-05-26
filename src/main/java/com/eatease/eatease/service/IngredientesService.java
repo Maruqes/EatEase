@@ -161,4 +161,14 @@ public class IngredientesService {
             return false;
         }
     }
+
+    public int getStockById(long id) {
+        Ingredientes ingredientes = ingredientesRepository.findById(id).orElse(null);
+        if (ingredientes != null) {
+            return ingredientes.getStock();
+        } else {
+            System.err.println("O ingrediente não existe.");
+            return -1; // Indicating that the ingredient does not exist
+        }
+    }
 }

@@ -26,10 +26,6 @@ public class ItemRequestDTO {
 
     private boolean composto;
 
-    @NotNull(message = "O stock atual é obrigatório")
-    @Min(value = 0, message = "O stock não pode ser negativo")
-    private Integer stockAtual;
-
     /* getters & setters – usa sempre WRAPPERS (Long/Float/Integer) */
     public String getNome() {
         return nome;
@@ -71,11 +67,4 @@ public class ItemRequestDTO {
         this.composto = composto;
     }
 
-    public Integer getStockAtual() {
-        return stockAtual;
-    }
-
-    public void setStockAtual(Integer stockAtual) {
-        this.stockAtual = stockAtual;
-    }
 }

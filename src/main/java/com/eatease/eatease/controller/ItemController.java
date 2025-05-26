@@ -40,7 +40,8 @@ public class ItemController {
                     requestDTO.getPreco(),
                     requestDTO.getIngredientes(),
                     requestDTO.isComposto(),
-                    requestDTO.getStockAtual());
+                    0);
+            itemService.SetCalculatedStockByItemId(res.getId());
             return ResponseEntity.ok(res);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -84,7 +85,8 @@ public class ItemController {
                     requestDTO.getPreco(),
                     requestDTO.getIngredientes(),
                     requestDTO.isComposto(),
-                    requestDTO.getStockAtual());
+                    0);
+            itemService.SetCalculatedStockByItemId(res.getId());
             return ResponseEntity.ok(res);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
