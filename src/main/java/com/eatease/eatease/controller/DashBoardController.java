@@ -6,6 +6,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.eatease.eatease.dto.DashBoardDTO;
+import com.eatease.eatease.dto.ItemProfitDTO;
+import com.eatease.eatease.model.Item;
 import com.eatease.eatease.service.DashBoardService;
 import com.eatease.eatease.service.Login;
 
@@ -137,6 +139,48 @@ public class DashBoardController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Erro ao calcular métricas do período: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/bestItem")
+    public ResponseEntity<?> getBestItem(
+            @RequestParam int lastDays,
+            @RequestParam(required = false, defaultValue = "0") int position,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        // Verificação de autenticação - apenas GERENTE pode ver métricas
+        String validUsername = Login.checkLoginWithCargos(request, "GERENTE");
+        if (validUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+        try {
+            Item bestItem = dashBoardService.getBestItem(lastDays, position);
+            if (bestItem != null) {
+                return ResponseEntity.ok(bestItem);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+        }
+    }
+
+    @GetMapping("/lucroByItemId")
+    public ResponseEntity<?> getLucroByItemId(
+            @RequestParam long itemId,
+            @RequestParam int lastDays,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        // Verificação de autenticação - apenas GERENTE pode ver métricas
+        String validUsername = Login.checkLoginWithCargos(request, "GERENTE");
+        if (validUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+        try {
+            ItemProfitDTO lucroInfo = dashBoardService.calcularLucroPorItem(itemId, lastDays);
+            return ResponseEntity.ok(lucroInfo);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao calcular lucro: " + e.getMessage());
         }
     }
 }
