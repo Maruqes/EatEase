@@ -49,7 +49,7 @@ public class ItemService {
             int ingredienteStock = ingredientesService.getStockById(ingredienteId);
             if (ingredienteStock < quantidade) {
                 System.err.println("O stock do ingrediente " + ingredienteId + " é insuficiente.");
-                throw new Exception("O stock do ingrediente " + ingredienteId + " é insuficiente.");
+                return 0; // If any ingredient stock is less than required quantity, return 0
             }
 
             // Calculate the stock of the item based on the ingredient stock
