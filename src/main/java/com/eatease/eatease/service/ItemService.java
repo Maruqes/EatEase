@@ -125,10 +125,24 @@ public class ItemService {
 
     /* ---------------------------- READ ------------------------------- */
     public List<Item> getAllItems() {
-        return itemRepository.findAll();
+        // update all stocks before returning
+        List<Item> items = itemRepository.findAll();
+        for (Item item : items) {
+            try {
+                SetCalculatedStockByItemId(item.getId());
+            } catch (Exception e) {
+                System.err.println("Erro ao calcular stock do item " + item.getId() + ": " + e.getMessage());
+            }
+        }
+        System.err.println("Todos os itens foram atualizados com sucesso.");
+        return items;
     }
 
-    public List<Item> getByPratoId(long tipoPratoId) {
+    public List<Item> getByPratoId(long tipoPratoId) throws IllegalArgumentException {
+        if (!tipoPratoService.checkTipoPratoExists(tipoPratoId)) {
+            System.err.println("O tipo de prato com ID " + tipoPratoId + " não existe.");
+            throw new IllegalArgumentException("O tipo de prato com ID " + tipoPratoId + " não existe.");
+        }
         return itemRepository.findByTipoPratoId(tipoPratoId);
     }
 
@@ -208,6 +222,17 @@ public class ItemService {
     }
 
     public Optional<Item> getItemById(long id) {
+        if (!itemRepository.existsById(id)) {
+            System.err.println("O item com ID " + id + " não existe.");
+            return Optional.empty();
+        }
+        System.err.println("Item encontrado com sucesso.");
+        // update stock before returning
+        try {
+            SetCalculatedStockByItemId(id);
+        } catch (Exception e) {
+            System.err.println("Erro ao calcular stock do item " + id + ": " + e.getMessage());
+        }
         return itemRepository.findById(id);
     }
 
@@ -233,6 +258,12 @@ public class ItemService {
 
     public Item getById(long id) {
         if (itemRepository.existsById(id)) {
+            // update stock before returning
+            try {
+                SetCalculatedStockByItemId(id);
+            } catch (Exception e) {
+                System.err.println("Erro ao calcular stock do item " + id + ": " + e.getMessage());
+            }
             return itemRepository.findById(id).get();
         }
         return null;
@@ -293,6 +324,12 @@ public class ItemService {
         for (Long id : ids) {
             Optional<Item> itemOpt = itemRepository.findById(id);
             if (itemOpt.isPresent()) {
+                // update stock before adding
+                try {
+                    SetCalculatedStockByItemId(id);
+                } catch (Exception e) {
+                    System.err.println("Erro ao calcular stock do item " + id + ": " + e.getMessage());
+                }
                 items.add(itemOpt.get());
             }
         }
