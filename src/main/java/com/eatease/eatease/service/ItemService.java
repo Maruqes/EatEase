@@ -108,7 +108,6 @@ public class ItemService {
             float preco,
             List<IngredienteQuantDTO> ingredientes, // <-- alterado
             boolean eComposto,
-            MultipartFile foto,
             int stockAtual) throws Exception {
 
         if (itemRepository.findByNome(nome).isPresent()) {
@@ -135,11 +134,7 @@ public class ItemService {
         item.setPreco(preco);
         item.seteComposto(eComposto);
         item.setStockAtual(stockAtual);
-
-        if (foto != null && !foto.isEmpty()) {
-            String filename = savePhoto(foto, nome);
-            item.setFoto(filename);
-        }
+        item.setFoto(null); // Inicialmente sem foto
 
         try {
             String json = objectMapper.writeValueAsString(ingredientes);
@@ -177,7 +172,6 @@ public class ItemService {
             float preco,
             List<IngredienteQuantDTO> ingredientes, // <-- alterado
             boolean eComposto,
-            MultipartFile foto,
             int stockAtual) throws Exception {
 
         Optional<Item> itemOpt = itemRepository.findById(id);
@@ -205,11 +199,7 @@ public class ItemService {
         item.setPreco(preco);
         item.seteComposto(eComposto);
         item.setStockAtual(stockAtual);
-
-        if (foto != null && !foto.isEmpty()) {
-            String filename = savePhoto(foto, nome);
-            item.setFoto(filename);
-        }
+        item.setFoto(null);
 
         try {
             String json = objectMapper.writeValueAsString(ingredientes);
@@ -379,5 +369,96 @@ public class ItemService {
             }
         }
         return items;
+    }
+
+    // Method to update photo for existing item
+    public String updateItemPhoto(long itemId, MultipartFile file) throws Exception {
+        // Check if item exists
+        Optional<Item> itemOpt = itemRepository.findById(itemId);
+        if (itemOpt.isEmpty()) {
+            System.err.println("O item com ID " + itemId + " não existe.");
+            throw new IllegalArgumentException("O item com ID " + itemId + " não existe.");
+        }
+
+        Item item = itemOpt.get();
+
+        // Delete old photo if exists
+        if (item.getFoto() != null && !item.getFoto().isEmpty()) {
+            deletePhotoFile(item.getFoto());
+        }
+
+        // Save new photo
+        String filename = savePhoto(file, item.getNome());
+        item.setFoto(filename);
+        itemRepository.save(item);
+
+        System.err.println("Foto do item " + itemId + " atualizada com sucesso: " + filename);
+        return filename;
+    }
+
+    // Method to delete photo file from filesystem
+    private void deletePhotoFile(String filename) {
+        try {
+            Path filePath = Paths.get(uploadDir).resolve(filename);
+            if (Files.exists(filePath)) {
+                Files.delete(filePath);
+                System.err.println("Foto anterior eliminada: " + filename);
+            }
+        } catch (Exception e) {
+            System.err.println("Erro ao eliminar foto anterior: " + e.getMessage());
+        }
+    }
+
+    // Method to delete photo from existing item
+    public boolean deleteItemPhoto(long itemId) throws Exception {
+        // Check if item exists
+        Optional<Item> itemOpt = itemRepository.findById(itemId);
+        if (itemOpt.isEmpty()) {
+            System.err.println("O item com ID " + itemId + " não existe.");
+            return false;
+        }
+
+        Item item = itemOpt.get();
+
+        // Check if item has photo
+        if (item.getFoto() == null || item.getFoto().isEmpty()) {
+            System.err.println("O item com ID " + itemId + " não tem foto.");
+            return false;
+        }
+
+        // Delete photo file
+        deletePhotoFile(item.getFoto());
+
+        // Update item record
+        item.setFoto(null);
+        itemRepository.save(item);
+
+        System.err.println("Foto do item " + itemId + " eliminada com sucesso.");
+        return true;
+    }
+
+    // Method to get photo URL for an item
+    public String getPhotoUrl(long itemId, String baseUrl) {
+        Optional<Item> itemOpt = itemRepository.findById(itemId);
+        if (itemOpt.isPresent()) {
+            Item item = itemOpt.get();
+            if (item.getFoto() != null && !item.getFoto().isEmpty()) {
+                return baseUrl + "/uploads/items/" + item.getFoto();
+            }
+        }
+        return null;
+    }
+
+    // Method to check if photo file exists
+    public boolean photoExists(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return false;
+        }
+        try {
+            Path filePath = Paths.get(uploadDir).resolve(filename);
+            return Files.exists(filePath);
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

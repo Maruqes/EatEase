@@ -4,13 +4,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.eatease.eatease.dto.IngredienteQuantDTO;
 import com.eatease.eatease.dto.ItemRequestDTO;
 import com.eatease.eatease.model.Item;
 import com.eatease.eatease.service.ItemService;
 import com.eatease.eatease.service.Login;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Parameter; // springdoc-openapi
+
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/item")
@@ -40,7 +48,6 @@ public class ItemController {
                     requestDTO.getPreco(),
                     requestDTO.getIngredientes(),
                     requestDTO.isComposto(),
-                    requestDTO.getFoto(),
                     0);
             itemService.SetCalculatedStockByItemId(res.getId());
             return ResponseEntity.ok(res);
@@ -86,7 +93,6 @@ public class ItemController {
                     requestDTO.getPreco(),
                     requestDTO.getIngredientes(),
                     requestDTO.isComposto(),
-                    requestDTO.getFoto(),
                     0);
             itemService.SetCalculatedStockByItemId(res.getId());
             return ResponseEntity.ok(res);
@@ -116,6 +122,141 @@ public class ItemController {
             }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/setFoto")
+    public ResponseEntity<?> setFoto(
+            @RequestParam long itemId,
+            @RequestParam("file") MultipartFile file,
+            @Parameter(hidden = true) HttpServletRequest request) {
+
+        // Verifica se o utilizador está autenticado
+        String validUsername = Login.checkLoginWithCargos(request, "GERENTE", "COZINHEIRO");
+        if (validUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Não autenticado");
+        }
+
+        // Validate file
+        if (file.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ficheiro não fornecido");
+        }
+
+        // Check file type
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Apenas ficheiros de imagem são permitidos");
+        }
+
+        // Check file size (max 5MB)
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ficheiro muito grande. Máximo 5MB");
+        }
+
+        try {
+            String filename = itemService.updateItemPhoto(itemId, file);
+            return ResponseEntity.ok("Foto atualizada com sucesso. Nome do ficheiro: " + filename);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao guardar foto: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/getFoto/{itemId}")
+    public ResponseEntity<?> getFoto(@PathVariable long itemId) {
+        try {
+            Optional<Item> itemOpt = itemService.getItemById(itemId);
+            if (itemOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Item não encontrado");
+            }
+
+            Item item = itemOpt.get();
+            if (item.getFoto() == null || item.getFoto().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Item não tem foto");
+            }
+
+            // Return the photo filename/path
+            return ResponseEntity.ok().body("{\"foto\": \"" + item.getFoto() + "\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao obter foto: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/deleteFoto/{itemId}")
+    public ResponseEntity<?> deleteFoto(
+            @PathVariable long itemId,
+            @Parameter(hidden = true) HttpServletRequest request) {
+
+        // Verifica se o utilizador está autenticado
+        String validUsername = Login.checkLoginWithCargos(request, "GERENTE", "COZINHEIRO");
+        if (validUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Não autenticado");
+        }
+
+        try {
+            boolean result = itemService.deleteItemPhoto(itemId);
+            if (result) {
+                return ResponseEntity.ok("Foto eliminada com sucesso");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Item não encontrado ou não tem foto");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao eliminar foto: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/createWithFoto")
+    public ResponseEntity<?> createItemWithFoto(
+            @RequestParam String nome,
+            @RequestParam long tipoPratoId,
+            @RequestParam float preco,
+            @RequestParam String ingredientes, // JSON string
+            @RequestParam boolean composto,
+            @RequestParam(required = false) MultipartFile foto,
+            @Parameter(hidden = true) HttpServletRequest request) {
+
+        // Verifica se o utilizador está autenticado
+        String validUsername = Login.checkLoginWithCargos(request, "GERENTE", "COZINHEIRO");
+        if (validUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Não autenticado");
+        }
+
+        try {
+            // Parse ingredients JSON
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<IngredienteQuantDTO> ingredientesList = objectMapper.readValue(ingredientes,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, IngredienteQuantDTO.class));
+
+            // Create item without photo first
+            Item item = itemService.createItem(nome, tipoPratoId, preco, ingredientesList, composto, 0);
+
+            // If photo is provided, update it
+            if (foto != null && !foto.isEmpty()) {
+                // Validate file
+                String contentType = foto.getContentType();
+                if (contentType == null || !contentType.startsWith("image/")) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("Apenas ficheiros de imagem são permitidos");
+                }
+
+                // Check file size (max 5MB)
+                if (foto.getSize() > 5 * 1024 * 1024) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ficheiro muito grande. Máximo 5MB");
+                }
+
+                String filename = itemService.updateItemPhoto(item.getId(), foto);
+                System.out.println("Foto guardada: " + filename);
+            }
+
+            itemService.SetCalculatedStockByItemId(item.getId());
+            return ResponseEntity.ok(item);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Erro ao cadastrar item: " + e.getMessage());
         }
     }
 }
