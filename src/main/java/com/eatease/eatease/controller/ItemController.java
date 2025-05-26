@@ -58,7 +58,7 @@ public class ItemController {
     @GetMapping("/getByPratoId")
     public ResponseEntity<?> getByPratoId(@RequestParam long pratoId,
             @Parameter(hidden = true) HttpServletRequest request) {
-        Item item = itemService.getById(pratoId);
+        Item item = itemService.getByIdUpdate(pratoId);
         if (item == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Item não encontrado.");
         }
