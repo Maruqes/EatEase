@@ -12,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -152,15 +154,20 @@ public class ItemService {
 
     /* ---------------------------- READ ------------------------------- */
     public List<Item> getAllItems() {
-        // update all stocks before returning
         List<Item> items = itemRepository.findAll();
-        for (Item item : items) {
-            try {
-                SetCalculatedStockByItemId(item.getId());
-            } catch (Exception e) {
-                System.err.println("Erro ao calcular stock do item " + item.getId() + ": " + e.getMessage());
-            }
-        }
+        List<CompletableFuture<Void>> futures = itemRepository.findAll().stream()
+                .map(item -> CompletableFuture.runAsync(() -> {
+                    try {
+                        SetCalculatedStockByItemId(item.getId());
+                    } catch (Exception e) {
+                        System.err.println("Erro ao calcular stock do item " + item.getId() + ": " + e.getMessage());
+                    }
+                }))
+                .collect(Collectors.toList());
+
+        // Aguarda todos terminarem
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
         System.err.println("Todos os itens foram atualizados com sucesso.");
         return items;
     }
