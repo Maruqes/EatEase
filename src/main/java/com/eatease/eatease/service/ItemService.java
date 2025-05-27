@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -60,34 +61,34 @@ public class ItemService {
         return filename;
     }
 
-    // based on stock of ingredientes calculate stock of item
     public int CalculateStockByItemId(long itemId) throws Exception {
-        // get ingredientes of item
         List<IngredienteQuantDTO> ingredientes = getIngredientesByItemId(itemId);
         if (ingredientes == null || ingredientes.isEmpty()) {
             System.err.println("O item não tem ingredientes definidos.");
             throw new Exception("O item não tem ingredientes definidos.");
         }
-        int stock = Integer.MAX_VALUE; // Start with a large number
-        for (IngredienteQuantDTO ingrediente : ingredientes) {
-            long ingredienteId = ingrediente.getIngredienteId();
-            int quantidade = ingrediente.getQuantidade();
 
-            // Get stock of the ingredient
-            int ingredienteStock = ingredientesService.getStockById(ingredienteId);
-            if (ingredienteStock < quantidade) {
-                System.err.println("O stock do ingrediente " + ingredienteId + " é insuficiente.");
-                return 0; // If any ingredient stock is less than required quantity, return 0
-            }
+        // 1) Agrupa todos os IDs
+        List<Long> ids = ingredientes.stream()
+                .map(IngredienteQuantDTO::getIngredienteId)
+                .collect(Collectors.toList());
 
-            // Calculate the stock of the item based on the ingredient stock
-            int itemStock = ingredienteStock / quantidade;
-            if (itemStock < stock) {
-                stock = itemStock; // Update the minimum stock
+        // 2) Busca stocks em batch
+        Map<Long, Integer> stocks = ingredientesService.getStocksByIds(ids);
+
+        int stock = Integer.MAX_VALUE;
+        for (IngredienteQuantDTO dto : ingredientes) {
+            int qtd = dto.getQuantidade();
+            Integer ingrStock = stocks.get(dto.getIngredienteId());
+            if (ingrStock == null || ingrStock < qtd) {
+                System.err.println("Stock insuficiente do ingrediente " + dto.getIngredienteId());
+                return 0;
             }
+            stock = Math.min(stock, ingrStock / qtd);
         }
+
         System.err.println("O stock do item " + itemId + " é: " + stock);
-        return stock; // Return the calculated stock
+        return stock;
     }
 
     public void SetCalculatedStockByItemId(long itemId) throws Exception {

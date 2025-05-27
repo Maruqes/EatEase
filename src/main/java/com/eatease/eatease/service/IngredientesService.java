@@ -5,6 +5,8 @@ import com.eatease.eatease.model.Item;
 import com.eatease.eatease.repository.IngredientesRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -170,5 +172,11 @@ public class IngredientesService {
             System.err.println("O ingrediente não existe.");
             return -1; // Indicating that the ingredient does not exist
         }
+    }
+
+    public Map<Long, Integer> getStocksByIds(List<Long> ids) {
+        List<Ingredientes> ingredientesList = ingredientesRepository.findAllById(ids);
+        return ingredientesList.stream()
+                .collect(Collectors.toMap(Ingredientes::getId, Ingredientes::getStock));
     }
 }
