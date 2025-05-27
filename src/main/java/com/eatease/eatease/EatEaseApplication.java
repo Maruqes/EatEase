@@ -12,7 +12,5 @@ public class EatEaseApplication {
 		Testing test = context.getBean(Testing.class);
 		test.criar();
 		//hello world
-		
-
 	}
 }

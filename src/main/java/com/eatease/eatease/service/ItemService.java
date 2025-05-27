@@ -91,7 +91,7 @@ public class ItemService {
         return stock;
     }
 
-    public void SetCalculatedStockByItemId(long itemId) throws Exception {
+    public int SetCalculatedStockByItemId(long itemId) throws Exception {
         // Get the item by ID
         Optional<Item> itemOpt = itemRepository.findById(itemId);
         if (itemOpt.isEmpty()) {
@@ -103,6 +103,7 @@ public class ItemService {
         item.setStockAtual(stock);
         itemRepository.save(item);
         System.err.println("O stock do item " + itemId + " foi atualizado para: " + stock);
+        return stock; // retorna o stock atualizado
     }
 
     /* ---------------------------- CREATE ------------------------------ */
