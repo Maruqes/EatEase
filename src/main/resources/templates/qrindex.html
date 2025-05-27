@@ -542,8 +542,40 @@
 
                     const itemCount = document.createElement('span');
                     itemCount.className = 'bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full';
-                    itemCount.textContent = `${menu.items_id.length} item${menu.items_id.length !== 1 ? 's' : ''}`;
+                    
+                    // Mostrar "Carregando..." enquanto verifica stock dos itens
+                    itemCount.textContent = 'Carregando...';
                     footer.appendChild(itemCount);
+                    
+                    // Verificar stock disponível de cada item do menu
+                    let loadedCount = 0;
+                    let availableItemsCount = 0;
+                    const totalItemsInMenu = menu.items_id.length;
+                    
+                    menu.items_id.forEach(itemId => {
+                        fetch(`/item/getByPratoId?pratoId=${itemId}`)
+                            .then(res => res.json())
+                            .then(itemData => {
+                                if (itemData.stockAtual > 0) {
+                                    availableItemsCount++;
+                                }
+                                loadedCount++;
+                                
+                                // Quando todos os itens forem verificados, atualizar o contador
+                                if (loadedCount === totalItemsInMenu) {
+                                    itemCount.textContent = `${availableItemsCount} item${availableItemsCount !== 1 ? 's' : ''}`;
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Erro ao verificar stock do item:', err);
+                                loadedCount++;
+                                
+                                // Mesmo com erro, continuar contagem
+                                if (loadedCount === totalItemsInMenu) {
+                                    itemCount.textContent = `${availableItemsCount} item${availableItemsCount !== 1 ? 's' : ''}`;
+                                }
+                            });
+                    });
 
                     const btn = document.createElement('button');
                     btn.className = 'group bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark transition-all flex items-center gap-1';
