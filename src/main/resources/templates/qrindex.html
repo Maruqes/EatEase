@@ -315,7 +315,23 @@
             { id: 4, nome: "Sobremesa", icon: "bx-cake" }
         ];
 
+        let availablePratoTypes = [...pratoTypes]; // Categorias disponíveis (será filtrada por stock)
         let currentPratoTypeIndex = 0;
+
+        // Função para filtrar categorias com itens disponíveis para um menu específico
+        function getAvailableCategoriesForMenu(menuItems) {
+            const categoriesWithStock = new Set();
+
+            // Verificar quais categorias têm pelo menos um item com stock > 0
+            menuItems.forEach(item => {
+                if (item.stockAtual > 0) {
+                    categoriesWithStock.add(item.tipoPrato_id);
+                }
+            });
+
+            // Filtrar pratoTypes para incluir apenas categorias com stock
+            return pratoTypes.filter(category => categoriesWithStock.has(category.id));
+        }
 
         // Limpar o carrinho quando a página é carregada pela primeira vez
         localStorage.removeItem('cart');
@@ -323,6 +339,9 @@
 
         // Função para iniciar o fluxo do pedido diretamente (sem passar pela seleção de menu)
         function initializeOrderFlow() {
+            // Para o fluxo direto, usar todas as categorias (será filtrado quando carregar os itens)
+            availablePratoTypes = [...pratoTypes];
+
             // Esconder a seleção de menu e mostrar o fluxo de pedido
             menuContainer.classList.add('hidden');
             orderProgress.classList.remove('hidden');
@@ -334,13 +353,13 @@
 
             // Configurar comportamentos dos botões de navegação para o fluxo direto
             nextBtn.onclick = function () {
-                if (currentPratoTypeIndex === pratoTypes.length - 1) {
+                if (currentPratoTypeIndex === availablePratoTypes.length - 1) {
                     // Mostrar tela de confirmação antes de finalizar
                     showOrderConfirmation();
                 } else {
-                    // Ir para próximo tipo de prato
+                    // Ir para próximo tipo de prato disponível
                     currentPratoTypeIndex++;
-                    loadItemsByPratoType(pratoTypes[currentPratoTypeIndex].id);
+                    loadItemsByPratoType(availablePratoTypes[currentPratoTypeIndex].id);
                     updateStepUI();
                 }
             };
@@ -350,15 +369,15 @@
                     // Não temos ação para voltar na primeira etapa
                     return;
                 } else {
-                    // Voltar para tipo de prato anterior
+                    // Voltar para tipo de prato anterior disponível
                     currentPratoTypeIndex--;
-                    loadItemsByPratoType(pratoTypes[currentPratoTypeIndex].id);
+                    loadItemsByPratoType(availablePratoTypes[currentPratoTypeIndex].id);
                     updateStepUI();
                 }
             };
 
-            // Mostrar as entradas (primeiro tipo de prato)
-            loadItemsByPratoType(pratoTypes[currentPratoTypeIndex].id);
+            // Mostrar o primeiro tipo de prato disponível
+            loadItemsByPratoType(availablePratoTypes[currentPratoTypeIndex].id);
 
             // Atualizar título
             updateStepUI();
@@ -366,25 +385,38 @@
 
         // Função para atualizar a interface com o tipo atual de prato
         function updateStepUI() {
-            const currentType = pratoTypes[currentPratoTypeIndex];
+            const currentType = availablePratoTypes[currentPratoTypeIndex];
 
             // Atualizar título
             titleEl.innerHTML = `<i class="bx ${currentType.icon}"></i> <span>${currentType.nome}</span>`;
 
-            // Atualizar indicador de progresso
-            for (let i = 0; i < pratoTypes.length; i++) {
-                const stepEl = document.getElementById(`step-${i + 1}`);
-                if (i < currentPratoTypeIndex) {
+            // Atualizar indicador de progresso (apenas para categorias disponíveis)
+            // Primeiro, esconder todos os steps
+            for (let i = 1; i <= 4; i++) {
+                const stepEl = document.getElementById(`step-${i}`);
+                const stepContainer = stepEl.parentElement;
+                stepContainer.style.display = 'none';
+            }
+
+            // Mostrar apenas os steps das categorias disponíveis
+            availablePratoTypes.forEach((category, index) => {
+                const originalIndex = pratoTypes.findIndex(p => p.id === category.id);
+                const stepEl = document.getElementById(`step-${originalIndex + 1}`);
+                const stepContainer = stepEl.parentElement;
+
+                stepContainer.style.display = 'flex';
+
+                if (index < currentPratoTypeIndex) {
                     // Etapa concluída
                     stepEl.className = 'h-10 w-10 rounded-full bg-green-500 text-white flex items-center justify-center mx-auto';
-                } else if (i === currentPratoTypeIndex) {
+                } else if (index === currentPratoTypeIndex) {
                     // Etapa atual
                     stepEl.className = 'h-10 w-10 rounded-full bg-brand text-white flex items-center justify-center mx-auto';
                 } else {
                     // Etapa futura
                     stepEl.className = 'h-10 w-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mx-auto';
                 }
-            }
+            });
 
             // Mostrar/esconder botões de navegação
             if (currentPratoTypeIndex === 0) {
@@ -396,7 +428,7 @@
                 backBtn.style.gap = '0.5rem';
             }
 
-            if (currentPratoTypeIndex === pratoTypes.length - 1) {
+            if (currentPratoTypeIndex === availablePratoTypes.length - 1) {
                 nextBtn.innerHTML = 'Continuar <i class="bx bx-check ml-1"></i>';
                 nextBtn.className = 'px-6 py-2.5 bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 transition-all ml-auto font-medium flex items-center gap-2';
             } else {
@@ -955,6 +987,8 @@
                     // Esconder navegação e barra de progresso
                     backBtn.classList.add('hidden');
                     nextBtn.classList.add('hidden');
+                    nextBtn.style.display = 'none'; // Garantir que o botão "Continuar" permaneça escondido
+                    backBtn.style.display = 'none';
                     orderProgress.classList.add('hidden');
                     cartSummary.classList.add('hidden');
 
@@ -1139,22 +1173,38 @@
 
                         // Quando todos os itens estiverem carregados
                         if (loadedItems === totalItems) {
+                            // Filtrar categorias que têm itens disponíveis
+                            availablePratoTypes = getAvailableCategoriesForMenu(loadedItemsData);
+
+                            // Se não há categorias disponíveis, mostrar mensagem
+                            if (availablePratoTypes.length === 0) {
+                                loader.classList.add('hidden');
+                                itemContainer.innerHTML = `<div class="col-span-3 text-center py-10">
+                                    <i class="bx bx-error-circle text-4xl text-orange-500 mb-4"></i>
+                                    <h2 class="text-xl font-semibold text-gray-800 mb-2">Menu Temporariamente Indisponível</h2>
+                                    <p class="text-gray-600">Todos os itens deste menu estão esgotados no momento.</p>
+                                    <p class="text-gray-600 mb-4">Por favor, escolha outro menu ou tente novamente mais tarde.</p>
+                                </div>`;
+                                itemContainer.classList.remove('hidden');
+                                return;
+                            }
+
                             // Iniciar o fluxo do pedido com os itens carregados
                             currentPratoTypeIndex = 0;
                             updateStepUI();
 
-                            // Mostrar os itens de acordo com o tipo atual
-                            showItemsByType(loadedItemsData, pratoTypes[currentPratoTypeIndex].id);
+                            // Mostrar os itens da primeira categoria disponível
+                            showItemsByType(loadedItemsData, availablePratoTypes[currentPratoTypeIndex].id);
 
                             // Atualizar os botões de navegação para navegar pelos tipos de itens do menu
                             nextBtn.onclick = function () {
-                                if (currentPratoTypeIndex === pratoTypes.length - 1) {
+                                if (currentPratoTypeIndex === availablePratoTypes.length - 1) {
                                     // Mostrar tela de confirmação antes de finalizar
                                     showOrderConfirmation();
                                 } else {
                                     // Ir para próximo tipo de prato
                                     currentPratoTypeIndex++;
-                                    showItemsByType(loadedItemsData, pratoTypes[currentPratoTypeIndex].id);
+                                    showItemsByType(loadedItemsData, availablePratoTypes[currentPratoTypeIndex].id);
                                     updateStepUI();
                                 }
                             };
@@ -1176,7 +1226,7 @@
                                 } else {
                                     // Voltar para tipo de prato anterior
                                     currentPratoTypeIndex--;
-                                    showItemsByType(loadedItemsData, pratoTypes[currentPratoTypeIndex].id);
+                                    showItemsByType(loadedItemsData, availablePratoTypes[currentPratoTypeIndex].id);
                                     updateStepUI();
                                 }
                             };
