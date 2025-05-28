@@ -64,6 +64,22 @@
                 transform: translateY(0);
             }
         }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
     </style>
 </head>
 
@@ -202,16 +218,29 @@
             addItem(item) {
                 const existingItem = this.items.find(i => i.id === item.id);
                 if (existingItem) {
-                    existingItem.quantity += 1;
+                    // Verificar se não excede o stock disponível
+                    if (existingItem.quantity < item.stockAtual) {
+                        existingItem.quantity += 1;
+                    } else {
+                        console.warn(`Não é possível adicionar mais itens. Stock disponível: ${item.stockAtual}`);
+                        return false; // Retorna false se não conseguir adicionar
+                    }
                 } else {
-                    this.items.push({
-                        ...item,
-                        quantity: 1
-                    });
+                    // Verificar se há stock disponível
+                    if (item.stockAtual > 0) {
+                        this.items.push({
+                            ...item,
+                            quantity: 1
+                        });
+                    } else {
+                        console.warn(`Item sem stock disponível`);
+                        return false; // Retorna false se não conseguir adicionar
+                    }
                 }
                 this.updateTotals();
                 this.saveToStorage();
                 this.updateUI();
+                return true; // Retorna true se conseguiu adicionar
             },
             removeItem(id) {
                 const index = this.items.findIndex(i => i.id === id);
@@ -225,6 +254,13 @@
             updateQuantity(id, quantity) {
                 const item = this.items.find(i => i.id === id);
                 if (item) {
+                    // Verificar se a nova quantidade não excede o stock disponível
+                    const maxStock = item.stockAtual || 0;
+                    if (quantity > maxStock) {
+                        console.warn(`Quantidade solicitada (${quantity}) excede o stock disponível (${maxStock})`);
+                        return false;
+                    }
+
                     item.quantity = quantity;
                     if (quantity <= 0) {
                         this.removeItem(id);
@@ -233,7 +269,9 @@
                         this.saveToStorage();
                         this.updateUI();
                     }
+                    return true;
                 }
+                return false;
             },
             updateTotals() {
                 this.total = this.items.reduce((sum, item) => sum + (item.preco * item.quantity), 0);
@@ -542,16 +580,16 @@
 
                     const itemCount = document.createElement('span');
                     itemCount.className = 'bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full';
-                    
+
                     // Mostrar "Carregando..." enquanto verifica stock dos itens
                     itemCount.textContent = 'Carregando...';
                     footer.appendChild(itemCount);
-                    
+
                     // Verificar stock disponível de cada item do menu
                     let loadedCount = 0;
                     let availableItemsCount = 0;
                     const totalItemsInMenu = menu.items_id.length;
-                    
+
                     menu.items_id.forEach(itemId => {
                         fetch(`/item/getByPratoId?pratoId=${itemId}`)
                             .then(res => res.json())
@@ -560,7 +598,7 @@
                                     availableItemsCount++;
                                 }
                                 loadedCount++;
-                                
+
                                 // Quando todos os itens forem verificados, atualizar o contador
                                 if (loadedCount === totalItemsInMenu) {
                                     itemCount.textContent = `${availableItemsCount} item${availableItemsCount !== 1 ? 's' : ''}`;
@@ -569,7 +607,7 @@
                             .catch(err => {
                                 console.error('Erro ao verificar stock do item:', err);
                                 loadedCount++;
-                                
+
                                 // Mesmo com erro, continuar contagem
                                 if (loadedCount === totalItemsInMenu) {
                                     itemCount.textContent = `${availableItemsCount} item${availableItemsCount !== 1 ? 's' : ''}`;
@@ -588,6 +626,26 @@
                 });
             })
             .catch(err => console.error('Erro ao obter menus:', err));
+
+        // Função auxiliar para determinar o ícone do item
+        function getItemIcon(item) {
+            // Ícone baseado no tipo de prato
+            let iconClass = pratoTypes[currentPratoTypeIndex].icon;
+
+            // Refinar ícone baseado no nome do item
+            const lowerName = item.nome.toLowerCase();
+            if (lowerName.includes('salada')) iconClass = 'bx-bowl-rice';
+            else if (lowerName.includes('peixe') || lowerName.includes('pesca')) iconClass = 'bx-fish';
+            else if (lowerName.includes('carne')) iconClass = 'bx-restaurant';
+            else if (lowerName.includes('pasta') || lowerName.includes('massa')) iconClass = 'bx-bowl-hot';
+            else if (lowerName.includes('sobremesa') || lowerName.includes('doce')) iconClass = 'bx-cake';
+            else if (lowerName.includes('vinho')) iconClass = 'bx-wine';
+            else if (lowerName.includes('cerveja')) iconClass = 'bx-beer';
+            else if (lowerName.includes('café')) iconClass = 'bx-coffee';
+            else if (lowerName.includes('refrigerante') || lowerName.includes('soda')) iconClass = 'bx-drink';
+
+            return iconClass;
+        }
 
         function renderItem(item, index) {
             const card = document.createElement('div');
@@ -621,24 +679,27 @@
             const imgContainer = document.createElement('div');
             imgContainer.className = `relative h-48 bg-gradient-to-br ${gradientColor} flex items-center justify-center overflow-hidden`;
 
-            // Ícone baseado no tipo de prato
-            let iconClass = pratoTypes[currentPratoTypeIndex].icon;
-
-            // Refinar ícone baseado no nome do item
-            const lowerName = item.nome.toLowerCase();
-            if (lowerName.includes('salada')) iconClass = 'bx-bowl-rice';
-            else if (lowerName.includes('peixe') || lowerName.includes('pesca')) iconClass = 'bx-fish';
-            else if (lowerName.includes('carne')) iconClass = 'bx-restaurant';
-            else if (lowerName.includes('pasta') || lowerName.includes('massa')) iconClass = 'bx-bowl-hot';
-            else if (lowerName.includes('sobremesa') || lowerName.includes('doce')) iconClass = 'bx-cake';
-            else if (lowerName.includes('vinho')) iconClass = 'bx-wine';
-            else if (lowerName.includes('cerveja')) iconClass = 'bx-beer';
-            else if (lowerName.includes('café')) iconClass = 'bx-coffee';
-            else if (lowerName.includes('refrigerante') || lowerName.includes('soda')) iconClass = 'bx-drink';
-
-            const icon = document.createElement('i');
-            icon.className = `bx ${iconClass} text-7xl text-white/75`;
-            imgContainer.appendChild(icon);
+            // Verificar se o item tem foto
+            if (item.foto && item.foto.trim() !== '') {
+                // Se tem foto, criar elemento de imagem
+                const img = document.createElement('img');
+                img.src = `/uploads/items/${item.foto}`;
+                img.alt = item.nome;
+                img.className = 'w-full h-full object-cover';
+                img.onerror = function () {
+                    // Se a imagem falhar ao carregar, mostrar ícone como fallback
+                    this.style.display = 'none';
+                    const fallbackIcon = document.createElement('i');
+                    fallbackIcon.className = `bx ${getItemIcon(item)} text-7xl text-white/75`;
+                    imgContainer.appendChild(fallbackIcon);
+                };
+                imgContainer.appendChild(img);
+            } else {
+                // Se não tem foto, usar ícone como antes
+                const icon = document.createElement('i');
+                icon.className = `bx ${getItemIcon(item)} text-7xl text-white/75`;
+                imgContainer.appendChild(icon);
+            }
 
             // Adicionar detalhe visual à imagem
             const pattern = document.createElement('div');
@@ -657,27 +718,46 @@
             const content = document.createElement('div');
             content.className = 'p-5 flex flex-col flex-grow';
 
-            // Descrição do item (simulada ou real se disponível)
+            // Array de descrições aleatórias
+            const randomDescriptions = [
+                'Preparado com ingredientes frescos selecionados pelos nossos chefs.',
+                'Uma experiência gastronómica única que te vai surpreender.',
+                'Sabores autênticos que despertam os sentidos.',
+                'Criado com carinho e tradição culinária.',
+                'Uma combinação perfeita de sabores e texturas.',
+                'Inspirado nas melhores receitas da casa.',
+                'Preparado na hora com ingredientes de qualidade superior.',
+                'Uma explosão de sabor em cada garfada.',
+                'Receita tradicional com um toque moderno.',
+                'Feito com amor e dedicação pelos nossos cozinheiros.',
+                'Uma viagem gastronómica inesquecível.',
+                'Ingredientes cuidadosamente selecionados para o máximo sabor.'
+            ];
+
+            // Descrição do item com mensagem aleatória
             const desc = document.createElement('p');
             desc.className = 'text-gray-600 mb-4 flex-grow';
-            desc.textContent = item.descricao || 'Preparado com ingredientes frescos selecionados pelos nossos chefs.';
+            const randomIndex = Math.floor(Math.random() * randomDescriptions.length);
+            desc.textContent = item.descricao || randomDescriptions[randomIndex];
             content.appendChild(desc);
 
-            // Nutrição (simulada)
+            // Container para indicador de stock apenas
             const nutrition = document.createElement('div');
             nutrition.className = 'flex flex-wrap gap-2 mb-4';
 
-            const nutritionItems = [
-                { icon: 'bx-coin-stack', text: `${Math.floor(Math.random() * 500 + 200)} cal` },
-                { icon: 'bx-timer', text: `${Math.floor(Math.random() * 20 + 10)} min` }
-            ];
-
-            nutritionItems.forEach(ni => {
-                const badge = document.createElement('div');
-                badge.className = 'bg-gray-100 px-2 py-1 rounded-full text-xs flex items-center gap-1';
-                badge.innerHTML = `<i class="bx ${ni.icon} text-brand"></i> ${ni.text}`;
-                nutrition.appendChild(badge);
-            });
+            // Adicionar indicador de stock
+            const stockBadge = document.createElement('div');
+            if (item.stockAtual > 10) {
+                stockBadge.className = 'bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs flex items-center gap-1';
+                stockBadge.innerHTML = `<i class="bx bx-check-circle text-green-600"></i> Disponível`;
+            } else if (item.stockAtual > 0) {
+                stockBadge.className = 'bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs flex items-center gap-1';
+                stockBadge.innerHTML = `<i class="bx bx-time text-yellow-600"></i> Últimos ${item.stockAtual}`;
+            } else {
+                stockBadge.className = 'bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs flex items-center gap-1';
+                stockBadge.innerHTML = `<i class="bx bx-x-circle text-red-600"></i> Esgotado`;
+            }
+            nutrition.appendChild(stockBadge);
 
             content.appendChild(nutrition);
 
@@ -692,7 +772,7 @@
 
             // Verificar se o item já está no carrinho
             const existingCartItem = cart.items.find(i => i.id === item.id);
-             
+
             if (existingCartItem) {
                 // Se já está no carrinho, mostrar controle de quantidade
                 const quantityControl = document.createElement('div');
@@ -738,13 +818,26 @@
                 const increaseBtn = document.createElement('button');
                 increaseBtn.className = 'w-8 h-8 flex items-center justify-center text-gray-600 hover:text-brand';
                 increaseBtn.innerHTML = '<i class="bx bx-plus"></i>';
+
+                // Verificar se já atingiu o limite de stock
+                const canAddMore = existingCartItem.quantity < item.stockAtual;
+                if (!canAddMore) {
+                    increaseBtn.className = 'w-8 h-8 flex items-center justify-center text-gray-400 cursor-not-allowed';
+                    increaseBtn.disabled = true;
+                    increaseBtn.title = `Stock máximo atingido (${item.stockAtual})`;
+                } else {
+                    increaseBtn.title = `Stock disponível: ${item.stockAtual}`;
+                }
+
                 increaseBtn.addEventListener('click', () => {
-                    cart.updateQuantity(item.id, existingCartItem.quantity + 1);
-                    // Recarregar o item para atualizar a UI
-                    const cardToUpdate = document.querySelector(`[data-item-id="${item.id}"]`);
-                    if (cardToUpdate) {
-                        const index = Array.from(itemContainer.children).indexOf(cardToUpdate);
-                        cardToUpdate.replaceWith(renderItem(item, index));
+                    if (existingCartItem.quantity < item.stockAtual) {
+                        cart.updateQuantity(item.id, existingCartItem.quantity + 1);
+                        // Recarregar o item para atualizar a UI
+                        const cardToUpdate = document.querySelector(`[data-item-id="${item.id}"]`);
+                        if (cardToUpdate) {
+                            const index = Array.from(itemContainer.children).indexOf(cardToUpdate);
+                            cardToUpdate.replaceWith(renderItem(item, index));
+                        }
                     }
                 });
                 quantityControl.appendChild(increaseBtn);
@@ -753,23 +846,37 @@
             } else {
                 // Botão de adicionar ao pedido
                 const addBtn = document.createElement('button');
-                addBtn.className = 'bg-brand text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-brand-dark transition-colors';
-                addBtn.innerHTML = '<i class="bx bx-plus"></i>';
-                addBtn.title = 'Adicionar ao pedido';
-                addBtn.addEventListener('click', () => {
-                    cart.addItem(item);
 
-                    // Animar o botão para indicar adição
-                    addBtn.classList.add('animate-ping');
-                    setTimeout(() => {
-                        // Recarregar o item para mostrar controle de quantidade
-                        const cardToUpdate = document.querySelector(`[data-item-id="${item.id}"]`);
-                        if (cardToUpdate) {
-                            const index = Array.from(itemContainer.children).indexOf(cardToUpdate);
-                            cardToUpdate.replaceWith(renderItem(item, index));
+                // Verificar se há stock disponível
+                if (item.stockAtual > 0) {
+                    addBtn.className = 'bg-brand text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-brand-dark transition-colors';
+                    addBtn.innerHTML = '<i class="bx bx-plus"></i>';
+                    addBtn.title = `Adicionar ao pedido (Stock: ${item.stockAtual})`;
+                    addBtn.addEventListener('click', () => {
+                        const success = cart.addItem(item);
+                        if (success) {
+                            // Recarregar o item para atualizar a UI
+                            const cardToUpdate = document.querySelector(`[data-item-id="${item.id}"]`);
+                            if (cardToUpdate) {
+                                const index = Array.from(itemContainer.children).indexOf(cardToUpdate);
+                                cardToUpdate.replaceWith(renderItem(item, index));
+                            }
+                        } else {
+                            // Mostrar mensagem de erro ou feedback visual
+                            addBtn.style.animation = 'shake 0.5s';
+                            setTimeout(() => {
+                                addBtn.style.animation = '';
+                            }, 500);
                         }
-                    }, 300);
-                });
+                    });
+                } else {
+                    // Item sem stock - botão desabilitado
+                    addBtn.className = 'bg-gray-400 text-white rounded-full w-10 h-10 flex items-center justify-center cursor-not-allowed';
+                    addBtn.innerHTML = '<i class="bx bx-x"></i>';
+                    addBtn.title = 'Sem stock disponível';
+                    addBtn.disabled = true;
+                }
+
                 priceBox.appendChild(addBtn);
             }
 
@@ -815,7 +922,10 @@
             })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Erro ao enviar pedido: ' + response.status);
+                        // Capturar a resposta de erro para análise
+                        return response.text().then(errorText => {
+                            throw new Error(errorText);
+                        });
                     }
                     return response.json();
                 })
@@ -860,29 +970,105 @@
                     // Esconder loader
                     loader.classList.add('hidden');
 
-                    // Mostrar mensagem de erro
-                    const errorMessage = document.createElement('div');
-                    errorMessage.className = 'bg-white/90 rounded-xl p-8 shadow-xl backdrop-blur-md text-center';
-                    errorMessage.innerHTML = `
-                        <div class="w-20 h-20 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4">
-                            <i class="bx bx-error text-4xl text-red-600"></i>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Erro ao Processar Pedido</h2>
-                        <p class="text-gray-600 mb-6">Ocorreu um erro ao enviar seu pedido. Por favor, tente novamente.</p>
-                        <button id="try-again-btn" class="bg-brand text-white px-6 py-3 rounded-lg hover:bg-brand-dark transition-colors">
-                            Tentar Novamente
-                        </button>
-                    `;
+                    // Verificar se é erro de stock insuficiente
+                    const errorMessage = error.message;
+                    const stockErrorMatch = errorMessage.match(/Erro ao cadastrar pedido: Não há stock suficiente para o prato (\d+)/) ||
+                        errorMessage.match(/Não há stock suficiente para o prato (\d+)/);
 
-                    itemContainer.innerHTML = '';
-                    itemContainer.appendChild(errorMessage);
-                    itemContainer.classList.remove('hidden');
-                    itemContainer.className = 'flex items-center justify-center';
+                    if (stockErrorMatch) {
+                        const pratoId = parseInt(stockErrorMatch[1]);
 
-                    // Botão para tentar novamente
-                    document.getElementById('try-again-btn').addEventListener('click', () => {
-                        showOrderConfirmation(); // Voltar para a tela de confirmação
-                    });
+                        // Encontrar o item no carrinho que tem stock insuficiente
+                        const itemWithoutStock = cart.items.find(item => item.id === pratoId);
+
+                        if (itemWithoutStock) {
+                            // Remover o item do carrinho
+                            cart.removeItem(pratoId);
+
+                            // Mostrar mensagem específica de stock insuficiente
+                            const stockErrorMessage = document.createElement('div');
+                            stockErrorMessage.className = 'bg-white/90 rounded-xl p-8 shadow-xl backdrop-blur-md text-center';
+                            stockErrorMessage.innerHTML = `
+                                <div class="w-20 h-20 rounded-full bg-orange-100 mx-auto flex items-center justify-center mb-4">
+                                    <i class="bx bx-package text-4xl text-orange-600"></i>
+                                </div>
+                                <h2 class="text-2xl font-bold text-gray-800 mb-4">Ops! Alguém foi mais rápido</h2>
+                                <p class="text-gray-600 mb-4">
+                                    Lamentamos, mas alguém pediu <strong>"${itemWithoutStock.nome}"</strong> antes de ti e o stock esgotou.
+                                </p>
+                                <p class="text-gray-600 mb-6">
+                                    Vamos removê-lo do teu carrinho. Por favor, pede outra coisa deliciosa!
+                                </p>
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                    <p class="text-yellow-800 text-sm">
+                                        <i class="bx bx-info-circle mr-1"></i>
+                                        Desculpa pelo incómodo. Os nossos pratos são muito populares!
+                                    </p>
+                                </div>
+                                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                                    <button id="choose-other-btn" class="bg-brand text-white px-6 py-3 rounded-lg hover:bg-brand-dark transition-colors flex items-center justify-center gap-2">
+                                        <i class="bx bx-food-menu"></i>
+                                        Escolher outro prato
+                                    </button>
+                                    ${cart.items.length > 0 ? `
+                                    <button id="continue-order-btn" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                                        <i class="bx bx-check"></i>
+                                        Finalizar com itens restantes
+                                    </button>
+                                    ` : ''}
+                                </div>
+                            `;
+
+                            itemContainer.innerHTML = '';
+                            itemContainer.appendChild(stockErrorMessage);
+                            itemContainer.classList.remove('hidden');
+                            itemContainer.className = 'flex items-center justify-center';
+
+                            // Event listeners para os botões
+                            document.getElementById('choose-other-btn').addEventListener('click', () => {
+                                // Voltar para seleção de menus
+                                itemContainer.classList.add('hidden');
+                                menuContainer.classList.remove('hidden');
+                                orderProgress.classList.add('hidden');
+                                nextBtn.classList.add('hidden');
+                                backBtn.classList.add('hidden');
+                                titleEl.innerHTML = '<i class="bx bx-food-menu"></i> <span>Escolhe o teu Menu</span>';
+                            });
+
+                            // Só adicionar o botão de continuar se houver itens no carrinho
+                            const continueBtn = document.getElementById('continue-order-btn');
+                            if (continueBtn) {
+                                continueBtn.addEventListener('click', () => {
+                                    // Tentar finalizar novamente com os itens restantes
+                                    finalizeOrder();
+                                });
+                            }
+                        }
+                    } else {
+                        // Erro genérico
+                        const genericErrorMessage = document.createElement('div');
+                        genericErrorMessage.className = 'bg-white/90 rounded-xl p-8 shadow-xl backdrop-blur-md text-center';
+                        genericErrorMessage.innerHTML = `
+                            <div class="w-20 h-20 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4">
+                                <i class="bx bx-error text-4xl text-red-600"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-800 mb-2">Erro ao Processar Pedido</h2>
+                            <p class="text-gray-600 mb-6">Ocorreu um erro ao enviar o teu pedido. Por favor, tenta novamente.</p>
+                            <button id="try-again-btn" class="bg-brand text-white px-6 py-3 rounded-lg hover:bg-brand-dark transition-colors">
+                                Tentar Novamente
+                            </button>
+                        `;
+
+                        itemContainer.innerHTML = '';
+                        itemContainer.appendChild(genericErrorMessage);
+                        itemContainer.classList.remove('hidden');
+                        itemContainer.className = 'flex items-center justify-center';
+
+                        // Botão para tentar novamente
+                        document.getElementById('try-again-btn').addEventListener('click', () => {
+                            showOrderConfirmation(); // Voltar para a tela de confirmação
+                        });
+                    }
                 });
         }
 

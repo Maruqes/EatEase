@@ -124,6 +124,21 @@ public class PedidoService {
             throw new Exception(error);
         }
 
+        for(Long prato : prato_id) {
+            Item item = itemService.getByIdNoUpdate(prato);
+            if (item == null) {
+                throw new Exception("O prato com ID " + prato + " não existe.");
+            }
+            List<IngredienteQuantDTO> ingredientes = itemService.getIngredientesByItemId(item.getId());
+            if (ingredientes == null || ingredientes.isEmpty()) {
+                throw new Exception("O prato " + item.getNome() + " não tem ingredientes.");
+            }
+            List<Long> ingredientesInsuficientes = temIngredientesSuficientes(item, ingredientes);
+            if (!ingredientesInsuficientes.isEmpty()) {
+                throw new Exception("Não há stock suficiente para o prato " + prato);
+            }
+        }
+
         for (Long prato : prato_id) {
             if (alterarStockItem(prato, itensRemover) == false) {
                 throw new Exception("Não há stock suficiente para o prato " + prato);
