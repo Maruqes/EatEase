@@ -8,9 +8,11 @@ import com.eatease.eatease.service.EstadoPedidoService;
 import com.eatease.eatease.service.FuncionarioService;
 import com.eatease.eatease.service.IngredientesService;
 import com.eatease.eatease.service.ItemService;
+import com.eatease.eatease.service.QRService;
 import com.eatease.eatease.service.TipoMenuService;
 import com.eatease.eatease.service.TipoPratoService;
 import com.eatease.eatease.service.UnidadeMedidaService;
+import com.eatease.eatease.service.QRService.QRData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +20,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
-public class Testing {
+public class Extra {
 
         private final UnidadeMedidaService unidadeMedidaService;
         private final CargoService cargoService;
@@ -28,12 +30,14 @@ public class Testing {
         private final TipoPratoService tipoPratoService;
         private final TipoMenuService tipoMenuService;
         private final ItemService itemService;
+        private final QRService qrService;
 
-        public Testing(CargoService cargoService, EstadoPedidoService estadoPedidoService,
+        public Extra(CargoService cargoService, EstadoPedidoService estadoPedidoService,
                         FuncionarioService funcionarioService, IngredientesService ingredientesService,
                         UnidadeMedidaService unidadeMedidaService,
                         TipoPratoService tipoPratoService,
                         ItemService itemService,
+                        QRService qrService,
                         TipoMenuService tipoMenuService) {
                 this.tipoMenuService = tipoMenuService;
                 this.tipoPratoService = tipoPratoService;
@@ -43,6 +47,7 @@ public class Testing {
                 this.itemService = itemService;
                 this.unidadeMedidaService = unidadeMedidaService;
                 this.ingredientesService = ingredientesService;
+                this.qrService = qrService;
         }
 
         public void createThreadToSendStockEmails() {
@@ -51,7 +56,7 @@ public class Testing {
                                 try {
                                         List<Item> low5 = new ArrayList<>();
                                         List<Item> low10 = new ArrayList<>();
-                                        
+
                                         List<Item> items = itemService.getAllItems();
                                         for (Item item : items) {
                                                 int qnt = itemService.SetCalculatedStockByItemId(item.getId());
@@ -77,10 +82,10 @@ public class Testing {
                                                                         htmlContent);
                                                 }
                                         }
-                                        
+
                                         // Sleep for 12 hours (12 * 60 * 60 * 1000 milliseconds)
                                         Thread.sleep(12 * 60 * 60 * 1000);
-                                        
+
                                 } catch (Exception e) {
                                         System.out.println("Erro ao calcular stock: " + e.getMessage());
                                         try {
@@ -93,7 +98,7 @@ public class Testing {
                                 }
                         }
                 });
-                
+
                 stockEmailThread.setDaemon(true);
                 stockEmailThread.setName("StockEmailThread");
                 stockEmailThread.start();
@@ -211,6 +216,24 @@ public class Testing {
                 return html.toString();
         }
 
+        void qrData() {
+                // create a thread that runs every 30 mins
+                Thread clearQRDataThread = new Thread(() -> {
+                        while (true) {
+                                try {
+                                        qrService.removeAllExpiredQRData();
+                                        // Sleep for 30 minutes
+                                        Thread.sleep(QRData.EXPIRATION_TIME);
+                                } catch (Exception e) {
+                                        System.out.println("Erro ao limpar QR Data: " + e.getMessage());
+                                }
+                        }
+                });
+                clearQRDataThread.setDaemon(true);
+                clearQRDataThread.setName("ClearQRDataThread");
+                clearQRDataThread.start();
+        }
+
         public void criar() {
 
                 cargoService.createCargo("FUNCIONARIO"); // id 1
@@ -273,5 +296,7 @@ public class Testing {
                 tipoMenuService.createTipoMenu("Sobremesa");
 
                 createThreadToSendStockEmails();
+                qrData();
+                System.out.println("Testing data created successfully!");
         }
 }

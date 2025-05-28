@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -18,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class QRService {
 
-    private final Map<String, QRData> qrDataMap = new ConcurrentHashMap<>();
+    private static final Map<String, QRData> qrDataMap = new ConcurrentHashMap<>();
     @Value("${app.base-url}/qr/qrPage?key=")
     private String PREFIX_URL;
 
@@ -61,11 +62,19 @@ public class QRService {
         return data != null && !data.isUsed();
     }
 
+    public void removeAllExpiredQRData() {
+        qrDataMap.entrySet().removeIf(entry -> entry.getValue().isExpired());
+    }
+
     public static class QRData {
         private Long funcionarioId;
         private Long mesaId;
         private boolean used;
         private String key;
+
+        // date to delete 30 mins
+        private Date createdAt = new Date();
+        public static final long EXPIRATION_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
 
         public QRData(Long funcionarioId, Long mesaId, boolean used, String key) {
             this.funcionarioId = funcionarioId;
@@ -96,6 +105,18 @@ public class QRService {
 
         public void setKey(String key) {
             this.key = key;
+        }
+
+        public boolean isExpired() {
+            return new Date().getTime() - createdAt.getTime() > EXPIRATION_TIME;
+        }
+
+        public Date getCreatedAt() {
+            return createdAt;
+        }
+
+        public void setCreatedAt(Date createdAt) {
+            this.createdAt = createdAt;
         }
     }
 }

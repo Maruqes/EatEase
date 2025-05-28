@@ -171,6 +171,8 @@ public class ItemService {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         System.err.println("Todos os itens foram atualizados com sucesso.");
+        // Retorna a lista de itens com stock atualizado
+        items = itemRepository.findAll();
         return items;
     }
 

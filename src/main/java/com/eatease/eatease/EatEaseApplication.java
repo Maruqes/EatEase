@@ -9,7 +9,7 @@ public class EatEaseApplication {
 
 	public static void main(String[] args) {
 		ApplicationContext context = SpringApplication.run(EatEaseApplication.class, args);
-		Testing test = context.getBean(Testing.class);
+		Extra test = context.getBean(Extra.class);
 		test.criar();
 		//hello world
 	}
