@@ -1,6 +1,7 @@
 package com.eatease.eatease.service;
 
 import com.eatease.eatease.dto.IngredienteQuantDTO;
+import com.eatease.eatease.dto.PedidoFastGetDTO;
 import com.eatease.eatease.model.Funcionario;
 import com.eatease.eatease.model.Item;
 import com.eatease.eatease.model.Mesa;
@@ -10,8 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.IntFunction;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class PedidoService {
@@ -204,6 +211,75 @@ public class PedidoService {
         return pedidoRepository.findAll();
     }
 
+    public static <T> CompletableFuture<List<T>> routine(IntFunction<CompletableFuture<T>> func, int vezes) {
+        List<CompletableFuture<T>> futuros = IntStream.range(0, vezes)
+                .mapToObj(func)
+                .toList();
+
+        return CompletableFuture.allOf(futuros.toArray(new CompletableFuture[0]))
+                .thenApply(v -> futuros.stream().map(CompletableFuture::join).toList());
+    }
+
+    public List<PedidoFastGetDTO> getAllPedidosFastGet() {
+        List<Pedido> allPedidos = getAllPedidos();
+        if (allPedidos.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Collect all unique IDs to batch load data
+        List<Long> allItemIds = allPedidos.stream()
+                .flatMap(pedido -> pedido.getItensIds().stream())
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<Long> allMesaIds = allPedidos.stream()
+                .map(Pedido::getMesa_id)
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<Long> allFuncionarioIds = allPedidos.stream()
+                .map(Pedido::getFuncionario_id)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Batch load all required data
+        Map<Long, Item> itemsMap = batchLoadItems(allItemIds);
+        Map<Long, Mesa> mesasMap = batchLoadMesas(allMesaIds);
+        Map<Long, Funcionario> funcionariosMap = batchLoadFuncionarios(allFuncionarioIds);
+
+        // Transform pedidos using pre-loaded data
+        return allPedidos.stream()
+                .map(currPedido -> {
+                    PedidoFastGetDTO pedido = new PedidoFastGetDTO();
+                    pedido.setId(currPedido.getId());
+
+                    // Use pre-loaded items
+                    pedido.setItensIds(currPedido.getItensIds().stream()
+                            .map(itemsMap::get)
+                            .filter(item -> item != null)
+                            .collect(Collectors.toList()));
+
+                    pedido.setEstadoPedido_id(currPedido.getEstadoPedido_id());
+
+                    // Use pre-loaded mesa
+                    Mesa mesa = mesasMap.get(currPedido.getMesa_id());
+                    pedido.setMesa_number(mesa != null ? mesa.getNumero() : 0);
+
+                    // Use pre-loaded funcionario
+                    Funcionario funcionario = funcionariosMap.get(currPedido.getFuncionario_id());
+                    pedido.setFuncionario(funcionario != null ? funcionario.getNome() : "");
+
+                    pedido.setDataHora(currPedido.getDataHora());
+                    pedido.setObservacao(currPedido.getObservacao());
+                    pedido.setIngredientesRemover(currPedido.getIngredientesRemover() != null
+                            ? currPedido.getIngredientesRemover()
+                            : new ArrayList<>());
+
+                    return pedido;
+                })
+                .collect(Collectors.toList());
+    }
+
     public Optional<Pedido> getPedidoById(long id) {
         return pedidoRepository.findById(id);
     }
@@ -264,5 +340,32 @@ public class PedidoService {
         pedidoRepository.save(pedido);
         System.err.println("Estado do pedido atualizado com sucesso.");
         return null; // sucesso
+    }
+
+    private Map<Long, Item> batchLoadItems(List<Long> itemIds) {
+        if (itemIds.isEmpty()) {
+            return Map.of();
+        }
+        // Use new batch loading method - much more efficient!
+        return itemService.getItemsByIds(itemIds).stream()
+                .collect(Collectors.toMap(Item::getId, item -> item));
+    }
+
+    private Map<Long, Mesa> batchLoadMesas(List<Long> mesaIds) {
+        if (mesaIds.isEmpty()) {
+            return Map.of();
+        }
+        // Use new batch loading method
+        return mesaService.getMesasByIds(mesaIds).stream()
+                .collect(Collectors.toMap(Mesa::getId, mesa -> mesa));
+    }
+
+    private Map<Long, Funcionario> batchLoadFuncionarios(List<Long> funcionarioIds) {
+        if (funcionarioIds.isEmpty()) {
+            return Map.of();
+        }
+        // Use new batch loading method
+        return funcionarioService.getFuncionariosByIds(funcionarioIds).stream()
+                .collect(Collectors.toMap(Funcionario::getId, funcionario -> funcionario));
     }
 }

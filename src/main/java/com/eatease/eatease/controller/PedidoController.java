@@ -1,6 +1,7 @@
 package com.eatease.eatease.controller;
 
 import com.eatease.eatease.model.Pedido;
+import com.eatease.eatease.dto.PedidoFastGetDTO;
 import com.eatease.eatease.dto.PedidoRequestDTO;
 import com.eatease.eatease.service.PedidoService;
 import com.eatease.eatease.service.QRService;
@@ -102,6 +103,22 @@ public class PedidoController {
         }
 
         List<Pedido> pedidos = pedidoService.getAllPedidos();
+        return ResponseEntity.ok(pedidos);
+    }
+
+    /**
+     * Busca todos os pedidos
+     */
+    @GetMapping("/getAllRapid")
+    public ResponseEntity<?> getAllPedidosUtraFastModernPhosmorphicFast2(
+            @Parameter(hidden = true) HttpServletRequest request) {
+        // Verificação de autenticação - todos os funcionários podem ver os pedidos
+        String validUsername = Login.checkLoginWithCargos(request, "GERENTE", "COZINHEIRO", "FUNCIONARIO");
+        if (validUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Não autenticado");
+        }
+
+        List<PedidoFastGetDTO> pedidos = pedidoService.getAllPedidosFastGet();
         return ResponseEntity.ok(pedidos);
     }
 

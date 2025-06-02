@@ -4,6 +4,7 @@ import com.eatease.eatease.model.Funcionario;
 import com.eatease.eatease.repository.FuncionarioRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -170,5 +171,18 @@ public class FuncionarioService {
 
     public Optional<Funcionario> getFuncionarioById(long id) {
         return funcionarioRepository.findById(id);
+    }
+
+    /**
+     * Batch load funcionarios by IDs
+     * 
+     * @param ids List of funcionario IDs to load
+     * @return List of funcionarios
+     */
+    public List<Funcionario> getFuncionariosByIds(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return funcionarioRepository.findByIdIn(ids);
     }
 }

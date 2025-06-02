@@ -31,4 +31,26 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
      */
     @Query("SELECT p FROM Pedido p WHERE p.dataHora >= :dataInicio AND p.dataHora <= :dataFim AND p.estadoPedido_id != 4")
     List<Pedido> findValidPedidosByDateRange(@Param("dataInicio") String dataInicio, @Param("dataFim") String dataFim);
+
+    /**
+     * Fetch all pedidos with optimized data loading for fast retrieval
+     * Uses native query to reduce database round trips
+     */
+    @Query(value = """
+            SELECT
+                p.id as pedido_id,
+                p.itensIds as itens_ids,
+                p.estadoPedido_id,
+                p.mesa_id,
+                p.funcionario_id,
+                p.dataHora,
+                p.observacao,
+                p.ingredientesRemover,
+                m.numero as mesa_numero,
+                f.nome as funcionario_nome
+            FROM pedido p
+            LEFT JOIN mesa m ON p.mesa_id = m.id
+            LEFT JOIN funcionario f ON p.funcionario_id = f.id
+            """, nativeQuery = true)
+    List<Object[]> findAllPedidosWithJoinedData();
 }

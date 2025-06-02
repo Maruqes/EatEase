@@ -4,6 +4,7 @@ import com.eatease.eatease.model.Mesa;
 import com.eatease.eatease.repository.MesaRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -135,5 +136,18 @@ public class MesaService {
             System.err.println("A mesa não existe.");
             return false;
         }
+    }
+
+    /**
+     * Batch load mesas by IDs
+     * 
+     * @param ids List of mesa IDs to load
+     * @return List of mesas
+     */
+    public List<Mesa> getMesasByIds(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return mesaRepository.findByIdIn(ids);
     }
 }

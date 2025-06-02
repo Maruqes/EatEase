@@ -51,6 +51,9 @@ public class ItemService {
 
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            throw new Exception("Nome do arquivo não pode ser nulo ou vazio");
+        }
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         String filename = itemName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + System.currentTimeMillis() + extension;
 
@@ -380,6 +383,19 @@ public class ItemService {
             }
         }
         return items;
+    }
+
+    /**
+     * Batch load items by IDs - much more efficient than individual queries
+     * 
+     * @param ids List of item IDs to load
+     * @return List of items
+     */
+    public List<Item> getItemsByIds(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return itemRepository.findByIdIn(ids);
     }
 
     // Method to update photo for existing item
