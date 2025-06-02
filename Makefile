@@ -36,3 +36,8 @@ init:
 	@echo "Iniciando o projeto..."
 	npm install
 	mvn clean install
+
+# Executar os testes unitários
+teste:
+	@echo "Executando testes unitários..."
+	mvn test
