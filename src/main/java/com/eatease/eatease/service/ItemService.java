@@ -117,6 +117,11 @@ public class ItemService {
             boolean eComposto,
             int stockAtual) throws Exception {
 
+        if (ingredientes == null || ingredientes.isEmpty()) {
+            System.err.println("A lista de ingredientes não pode ser nula ou vazia.");
+            throw new IllegalArgumentException("A lista de ingredientes não pode ser nula ou vazia.");
+        }
+
         if (itemRepository.findByNome(nome).isPresent()) {
             System.err.println("O item já existe.");
             throw new IllegalArgumentException("O item já existe.");
@@ -187,6 +192,11 @@ public class ItemService {
             List<IngredienteQuantDTO> ingredientes, // <-- alterado
             boolean eComposto,
             int stockAtual) throws Exception {
+
+        if (ingredientes == null || ingredientes.isEmpty()) {
+            System.err.println("A lista de ingredientes não pode ser nula ou vazia.");
+            throw new IllegalArgumentException("A lista de ingredientes não pode ser nula ou vazia.");
+        }
 
         Optional<Item> itemOpt = itemRepository.findById(id);
         if (itemOpt.isEmpty()) {
