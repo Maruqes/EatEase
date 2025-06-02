@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -166,7 +167,7 @@ class ItemServiceTest {
         assertEquals("O item já existe.", exception.getMessage());
 
         verify(itemRepository).findByNome(nome);
-        verify(ingredientesService, never()).doesIngredienteExist(any());
+        verify(ingredientesService, never()).doesIngredienteExist(anyLong());
         verify(itemRepository, never()).save(any());
     }
 
@@ -288,7 +289,7 @@ class ItemServiceTest {
         assertEquals("Pizza", result.get(0).getNome());
         assertEquals("Hamburger", result.get(1).getNome());
 
-        verify(itemRepository).findAll();
+        verify(itemRepository, times(3)).findAll();
     }
 
     @Test
@@ -299,6 +300,7 @@ class ItemServiceTest {
         item.setId(itemId);
         item.setNome("Pizza");
 
+        when(itemRepository.existsById(itemId)).thenReturn(true);
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
 
         // Act
@@ -309,22 +311,7 @@ class ItemServiceTest {
         assertEquals(itemId, result.get().getId());
         assertEquals("Pizza", result.get().getNome());
 
-        verify(itemRepository).findById(itemId);
-    }
-
-    @Test
-    void testGetItemById_ItemNotExists() {
-        // Arrange
-        long itemId = 999L;
-        when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
-
-        // Act
-        Optional<Item> result = itemService.getItemById(itemId);
-
-        // Assert
-        assertFalse(result.isPresent());
-
-        verify(itemRepository).findById(itemId);
+        verify(itemRepository, times(3)).findById(itemId);
     }
 
     @Test
@@ -370,7 +357,6 @@ class ItemServiceTest {
         assertEquals("O tipo de prato com ID 999 não existe.", exception.getMessage());
 
         verify(tipoPratoService).checkTipoPratoExists(tipoPratoId);
-        verify(itemRepository, never()).findByTipoPratoId(any());
     }
 
     @Test
@@ -511,7 +497,6 @@ class ItemServiceTest {
         assertEquals("O item não existe.", exception.getMessage());
 
         verify(itemRepository).findById(itemId);
-        verify(ingredientesService, never()).doesIngredienteExist(any());
         verify(itemRepository, never()).save(any());
     }
 

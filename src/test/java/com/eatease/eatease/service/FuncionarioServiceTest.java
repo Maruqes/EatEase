@@ -3,8 +3,6 @@ package com.eatease.eatease.service;
 import com.eatease.eatease.model.Funcionario;
 import com.eatease.eatease.model.Cargo;
 import com.eatease.eatease.repository.FuncionarioRepository;
-import com.eatease.eatease.service.Login;
-import com.eatease.eatease.service.CargoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
