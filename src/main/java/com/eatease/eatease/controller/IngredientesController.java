@@ -59,7 +59,7 @@ public class IngredientesController {
         return ResponseEntity.ok(ingredientes);
     }
 
-    @PostMapping("/edit")
+    @PutMapping("/edit")
     public ResponseEntity<?> editIngrediente(
             @RequestParam long id,
             @Valid @RequestBody IngredientesRequestDTO requestDTO,

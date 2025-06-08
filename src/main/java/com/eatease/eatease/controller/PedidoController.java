@@ -166,7 +166,7 @@ public class PedidoController {
         }
     }
 
-    @PostMapping("/setEstado")
+    @PutMapping("/setEstado")
     public ResponseEntity<String> setEstado(
             @RequestParam long id,
             @RequestParam long estadoPedido_id,

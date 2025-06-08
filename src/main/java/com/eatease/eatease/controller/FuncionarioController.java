@@ -124,7 +124,7 @@ public class FuncionarioController {
         }
     }
 
-    @PostMapping("/updateFuncionario")
+    @PutMapping("/updateFuncionario")
     public ResponseEntity<?> updateFuncionario(@RequestParam long funcionarioId,
             @RequestBody FuncionarioDTO dto,
             @Parameter(hidden = true) HttpServletRequest request) {

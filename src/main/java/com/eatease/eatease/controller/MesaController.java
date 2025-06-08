@@ -142,7 +142,7 @@ public class MesaController {
     /**
      * Define uma mesa como ocupada
      */
-    @PostMapping("/ocupar")
+    @PutMapping("/ocupar")
     public ResponseEntity<String> setMesaOcupada(
             @RequestParam long id,
             @Parameter(hidden = true) HttpServletRequest request) {
@@ -165,7 +165,7 @@ public class MesaController {
     /**
      * Define uma mesa como ocupada pelo número
      */
-    @PostMapping("/ocupar/numero")
+    @PutMapping("/ocupar/numero")
     public ResponseEntity<String> setMesaOcupadaByNumero(
             @RequestParam int numero,
             @Parameter(hidden = true) HttpServletRequest request) {
@@ -188,7 +188,7 @@ public class MesaController {
     /**
      * Define uma mesa como livre
      */
-    @PostMapping("/liberar")
+    @PutMapping("/liberar")
     public ResponseEntity<String> setMesaLivre(
             @RequestParam long id,
             @Parameter(hidden = true) HttpServletRequest request) {
@@ -212,7 +212,7 @@ public class MesaController {
      * update server
      * Define uma mesa como livre pelo número
      */
-    @PostMapping("/liberar/numero")
+    @PutMapping("/liberar/numero")
     public ResponseEntity<String> setMesaLivreByNumero(
             @RequestParam int numero,
             @Parameter(hidden = true) HttpServletRequest request) {
@@ -271,7 +271,7 @@ public class MesaController {
         }
     }
 
-    @PostMapping("/updatePosition")
+    @PutMapping("/updatePosition")
     public ResponseEntity<String> updateMesaPosition(
             @RequestParam long id,
             @RequestParam float pos_x,

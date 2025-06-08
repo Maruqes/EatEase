@@ -73,7 +73,7 @@ public class ItemController {
         return ResponseEntity.ok(item);
     }
 
-    @PostMapping("/edit")
+    @PutMapping("/edit")
     public ResponseEntity<?> editItem(
             @RequestParam long id,
             @Valid @RequestBody ItemRequestDTO requestDTO,
