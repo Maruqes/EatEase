@@ -324,8 +324,8 @@
 
         // Tipos de pratos e fluxo do pedido
         const pratoTypes = [
-            { id: 2, nome: "Entradas", icon: "bx-dish" },
-            { id: 1, nome: "Prato Principal", icon: "bx-restaurant" },
+            { id: 1, nome: "Entradas", icon: "bx-dish" },
+            { id: 2, nome: "Prato Principal", icon: "bx-restaurant" },
             { id: 4, nome: "Bebida", icon: "bx-drink" },
             { id: 3, nome: "Sobremesa", icon: "bx-cake" }
         ];
@@ -811,10 +811,10 @@
             // Cores de gradiente baseadas no tipo de prato atual
             let gradientColor;
             switch (pratoTypes[currentPratoTypeIndex].id) {
-                case 2: // Entradas
+                case 1: // Entradas
                     gradientColor = 'from-amber-400 to-orange-500';
                     break;
-                case 1: // Prato Principal
+                case 2: // Prato Principal
                     gradientColor = 'from-rose-500 to-orange-500';
                     break;
                 case 4: // Bebida
