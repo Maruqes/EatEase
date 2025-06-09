@@ -326,8 +326,8 @@
         const pratoTypes = [
             { id: 2, nome: "Entradas", icon: "bx-dish" },
             { id: 1, nome: "Prato Principal", icon: "bx-restaurant" },
-            { id: 3, nome: "Bebida", icon: "bx-drink" },
-            { id: 4, nome: "Sobremesa", icon: "bx-cake" }
+            { id: 4, nome: "Bebida", icon: "bx-drink" },
+            { id: 3, nome: "Sobremesa", icon: "bx-cake" }
         ];
 
         let availablePratoTypes = [...pratoTypes]; // Categorias disponíveis (será filtrada por stock)
@@ -817,10 +817,10 @@
                 case 1: // Prato Principal
                     gradientColor = 'from-rose-500 to-orange-500';
                     break;
-                case 3: // Bebida
+                case 4: // Bebida
                     gradientColor = 'from-blue-400 to-indigo-500';
                     break;
-                case 4: // Sobremesa
+                case 3: // Sobremesa
                     gradientColor = 'from-purple-500 to-pink-500';
                     break;
                 default:
